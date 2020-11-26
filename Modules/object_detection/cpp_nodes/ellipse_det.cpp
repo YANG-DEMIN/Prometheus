@@ -49,7 +49,7 @@ using namespace spire;
 #define ELLIPSE_PUB
 
 // circle eg. IM_NAME.jpg 0 is background 1 is circle
-std::string imlist_dir = "/home/nvidia/vision_ws/src/ellipse_det_ros/labeled_img_class.txt";  // 进行一个字符串赋值，方便下面调用
+// std::string imlist_dir = "/home/nvidia/vision_ws/src/ellipse_det_ros/labeled_img_class.txt";  // 进行一个字符串赋值，方便下面调用
 // images, include above information
 std::string base_path = "/home/nvidia/vision_ws/src/ellipse_det_ros/images_from_camera/";  // 同上
 
@@ -58,7 +58,7 @@ ros::Subscriber switch_subscriber;
 // 接收消息，允许暂停检测
 bool is_suspanded = false;
 // 使用cout打印消息
-bool local_print = false;
+bool local_print = true;
 // 使用prometheus_msgs::Message打印消息
 bool message_print = true;
 //【发布】调试消息
@@ -74,6 +74,8 @@ bool image_status = false;
 boost::shared_mutex mutex_image_status;
 
 EllipseDetector ellipse_detector;
+HOGDescriptor hog(Size(28, 28), Size(4, 4), Size(4, 4), Size(4, 4), 9);
+bool use_hog = true;
 
 
 // 图像接收回调函数，接收web_cam的话题，并将图像保存在cam_image_copy中
@@ -204,13 +206,30 @@ vector<float> hist_feature(cv::Mat& resized_im)  // 生成直方图，带入形�
     {
         feats[i] /= total;
     }
+
+    if (use_hog)
+    {
+        cv::Mat resized_im_gray;
+        cvtColor(resized_im, resized_im_gray, CV_BGR2GRAY);
+
+        // cout << "w, h: " << resized_im_gray.cols << ", " << resized_im_gray.rows << endl;
+        vector<float> descriptors;  // HOG描述子向量
+        hog.compute(resized_im_gray, descriptors, Size(4, 4));
+        feats.insert(
+            feats.end(),
+            std::make_move_iterator(descriptors.begin()),
+            std::make_move_iterator(descriptors.end())
+        );
+        // cout << "descriptors size" << descriptors.size() << endl;
+        // cout << "feats size" << feats.size() << endl;
+    }
     return feats;  // 返回feats
 }
 
 // 用标注的图像训练SVM分类器
-Ptr<SVM> train_svm_classifier()
+Ptr<SVM> train_svm_classifier(std::string train_imlist, std::string train_imdir)
 {
-    ifstream ifs(imlist_dir);
+    ifstream ifs(train_imlist);
     string im_name;
     int label;
 
@@ -222,7 +241,8 @@ Ptr<SVM> train_svm_classifier()
     while (ifs >> im_name >> label)
     {
         cout << im_name << " " << label << endl;
-        Mat im_one = imread(base_path + im_name, 1);
+        cout << train_imdir + "/" + im_name << endl;
+        Mat im_one = imread(train_imdir + "/" + im_name, 1);
         all_labels.push_back(label);
 
         cv::resize(im_one, resized_im, Size(28, 28));
@@ -233,10 +253,15 @@ Ptr<SVM> train_svm_classifier()
         all_feats.push_back(feats);
     }
 
-    Mat trainingDataMat(all_feats.size(), 30, CV_32FC1);
+    int feats_len = 30;
+    if (use_hog)
+    {
+        feats_len = 471;
+    }
+    Mat trainingDataMat(all_feats.size(), feats_len, CV_32FC1);
     Mat labelsMat(all_feats.size(), 1, CV_32S);
     for (int i = 0; i < all_feats.size(); i++) {
-        for (int t = 0; t < 30; t++) {
+        for (int t = 0; t < feats_len; t++) {
             float tmp = all_feats[i][t]; // !!!!!!!!!!!!!!!
             float* pf = trainingDataMat.ptr<float>(i, t);
             *pf = tmp;
@@ -311,19 +336,82 @@ int main(int argc, char **argv)
         camera_info = "camera_param.yaml";
     }
 
+    // With Training
+    bool wt = false;
+    if (nh.getParam("with_training", wt)) {
+        if (local_print)
+            ROS_INFO("with_training is %d", wt);
+    } else {
+        if (local_print)
+            ROS_WARN("didn't find parameter with_training");
+        wt = false;
+    }
+
+    std::string train_imlist, train_imdir;
+    if (nh.getParam("train_imlist", train_imlist)) {
+        if (local_print)
+            ROS_INFO("train_imlist is %s", train_imlist.c_str());
+        if (message_print)
+            pub_message(message_pub, prometheus_msgs::Message::NORMAL, msg_node_name, "train_imlist is" + train_imlist);
+    } else {
+        if (local_print)
+            ROS_WARN("didn't find parameter train_imlist");
+        if (message_print)
+            pub_message(message_pub, prometheus_msgs::Message::WARN, msg_node_name, "didn't find parameter train_imlist");
+        train_imlist = "ellipse/labeled_img_class.txt";
+    }
+
+    if (nh.getParam("train_imdir", train_imdir)) {
+        if (local_print)
+            ROS_INFO("train_imdir is %s", train_imdir.c_str());
+        if (message_print)
+            pub_message(message_pub, prometheus_msgs::Message::NORMAL, msg_node_name, "train_imdir is" + train_imdir);
+    } else {
+        if (local_print)
+            ROS_WARN("didn't find parameter train_imdir");
+        if (message_print)
+            pub_message(message_pub, prometheus_msgs::Message::WARN, msg_node_name, "didn't find parameter train_imdir");
+        train_imdir = "ellipse/images_from_camera/";
+    }
+
+    // Saving ellipse center
+    bool saving_center = false;
+    if (nh.getParam("saving_center", saving_center)) {
+        if (local_print)
+            ROS_INFO("saving_center is %d", saving_center);
+    } else {
+        if (local_print)
+            ROS_WARN("didn't find parameter saving_center");
+        saving_center = false;
+    }
+
+    std::string saving_path;
+    if (nh.getParam("saving_path", saving_path)) {
+        if (local_print)
+            ROS_INFO("saving_path is %s", saving_path.c_str());
+        if (message_print)
+            pub_message(message_pub, prometheus_msgs::Message::NORMAL, msg_node_name, "saving_path is" + saving_path);
+    } else {
+        if (local_print)
+            ROS_WARN("didn't find parameter saving_path");
+        if (message_print)
+            pub_message(message_pub, prometheus_msgs::Message::WARN, msg_node_name, "didn't find parameter saving_path");
+        saving_path = "ellipse/images_from_camera/";
+    }
+
+
     bool switch_state = is_suspanded;
     // 接收开关话题
     switch_subscriber = nh.subscribe("/prometheus/switch/ellipse_det", 10, switchCallback);
 
-    // With Training
-    bool wt = false;
-    for (int i=0; i<argc; i++)
-    {
-        if (strcmp("wt", argv[i]) == 0) { wt = true; break; }
-    }
+    // for (int i=0; i<argc; i++)
+    // {
+    //     if (strcmp("wt", argv[i]) == 0) { wt = true; break; }
+    // }
+
 
     if (wt)
-        svm = train_svm_classifier();
+        svm = train_svm_classifier(train_imlist, train_imdir);
 
     ros::Rate loop_rate(30);
     
@@ -361,6 +449,7 @@ int main(int argc, char **argv)
     
     sensor_msgs::ImagePtr msg_ellipse;
 
+    int saving_ellipse_cnt = 0;
     // const auto wait_duration = std::chrono::milliseconds(2000);
     ros::Rate loopRate_1Hz(1);
     while (ros::ok())
@@ -410,7 +499,34 @@ int main(int argc, char **argv)
         static double last_x(0), last_y(0), last_z(0);
         bool deted = false;
 
-        if (wt)
+        if (saving_center)
+        {
+            // 遍历每个检测到的椭圆
+            for (int i=0; i<ells.size(); i++)
+            {
+                Ellipse e = ells[i];
+
+                int xc = ells[i].xc_;
+                int yc = ells[i].yc_;
+                int width = (ells[i].a_ + ells[i].b_)*0.65;
+
+                // 提取椭圆中心区域
+                Rect output_r(xc - width / 2, yc - width / 2, width, width);
+                if (output_r.x < 0 || output_r.y < 0 ||
+                    output_r.x + output_r.width >= frame.cols ||
+                    output_r.y + output_r.height >= frame.rows)
+                    continue;
+                Mat center_det = frame(output_r);
+
+                // 提取中心区域的颜色直方图
+                cv::resize(center_det, center_det, cv::Size(28,28));
+
+                char output_name[256];
+                sprintf(output_name, "%s/%010d.jpg", saving_path.c_str(), saving_ellipse_cnt++);
+                cv::imwrite(output_name, center_det);
+            }
+        }
+        else if (wt)
         {
             // 遍历每个检测到的椭圆
             for (int i=0; i<ells.size(); i++)
@@ -434,8 +550,13 @@ int main(int argc, char **argv)
                 cv::cvtColor(center_det, center_det, COLOR_BGR2HSV);
                 std::vector<float> feat = hist_feature(center_det);
 
-                cv::Mat predictDataMat(1, 30, CV_32F);
-                for (int i=0;i<30;i++)
+                int feats_len = 30;
+                if (use_hog)
+                {
+                    feats_len = 471;
+                }
+                cv::Mat predictDataMat(1, feats_len, CV_32F);
+                for (int i=0; i<feats_len; i++)
                 {
                     predictDataMat.at<float>(i) = feat[i];
                 }
