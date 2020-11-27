@@ -31,4 +31,8 @@
   <run_depend>rostime</run_depend>
   <run_depend>std_msgs</run_depend>
   <run_depend>prometheus_msgs</run_depend>
+
+  <build_depend>nlink_parser</build_depend>
+  <run_depend>nlink_parser</run_depend>
+
 </package>

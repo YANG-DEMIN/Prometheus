@@ -58,6 +58,8 @@ find_package(catkin REQUIRED COMPONENTS
     actionlib
     prometheus_msgs
     tf2_eigen
+	std_msgs
+	nlink_parser
 )
 
 ## System dependencies are found with CMake's conventions
@@ -117,10 +119,10 @@ add_definitions(-O4 -g)
 # )
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   std_msgs  # Or other packages containing msgs
-# )
+generate_messages(
+	DEPENDENCIES
+	std_msgs  # Or other packages containing msgs
+	)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -357,6 +359,15 @@ add_executable(stereo_detection_saving_gazebo_samples
 )
 target_link_libraries(stereo_detection_saving_gazebo_samples ${catkin_LIBRARIES} ${Boost_LIBRARIES} ${OpenCV_LIBS} yaml-cpp)
 
+##LinkTracker
+set(NODE_NAME "linktrack_example")
+add_executable(${NODE_NAME}
+    src/LinkTrack/subscriber.cpp
+    )
+target_link_libraries(${NODE_NAME}
+    ${catkin_LIBRARIES}
+    )
+add_dependencies(${NODE_NAME} ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
 
 if(CATKIN_ENABLE_TESTING)
   # Download yolov3-tiny.weights
