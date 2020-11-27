@@ -26,7 +26,7 @@
 	
 	<!-- run the px4_pos_controller.cpp -->
 	<node pkg="prometheus_control" type="px4_pos_controller" name="px4_pos_controller" output="screen">
-		<rosparam command="load" file="$(find prometheus_experiment)/config/prometheus_config/px4_pos_controller.yaml"/>
+		<rosparam command="load" file="$(find prometheus_experiment)/config/prometheus_control_config/px4_pos_controller.yaml"/>
 	</node>
 </launch>
 
