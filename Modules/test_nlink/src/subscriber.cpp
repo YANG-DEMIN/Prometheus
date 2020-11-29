@@ -13,9 +13,16 @@ void tagframe2Callback(const nlink_parser::LinktrackNodeframe2::ConstPtr &msg) {
     id = item.id;
     dis = item.dis;
   }
-  printf("Target:\n");
+  printf("UWB:\n");
   printf("\tSystemTime: %d\n", msg->system_time);
-  printf("\tDistance: %f\n", dis);
+  printf("\tposition:\n");
+  printf("\t\tx: %f\n", msg->pos_3d[0]);
+  printf("\t\ty: %f\n", msg->pos_3d[1]);
+  printf("\t\tz: %f\n", msg->pos_3d[2]);
+  
+  //printf("Target:\n");
+  //printf("\tSystemTime: %d\n", msg->system_time);
+  //printf("\tDistance: %f\n", dis);
 
 }
 
