@@ -10,7 +10,7 @@
 		<rosparam command="load" file="$(find prometheus_experiment)/config/mavros_config/px4_pluginlists.yaml" />
 		<rosparam command="load" file="$(find prometheus_experiment)/config/mavros_config/px4_config.yaml" />
 	</node>
-    <node pkg="prometheus_mission" type="offboard_test" name="test1" output="screen">
+    <node pkg="prometheus_mission" type="offboard_test" name="test1" output="screen" >
     </node>
 </launch>
 
