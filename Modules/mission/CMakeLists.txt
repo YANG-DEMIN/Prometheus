@@ -116,6 +116,10 @@ add_executable(fake_detectioninfo test/fake_detectioninfo.cpp)
 add_dependencies(fake_detectioninfo prometheus_mission_gencpp)
 target_link_libraries(fake_detectioninfo ${catkin_LIBRARIES})
 
+add_executable(offboard_test test/offb_node.cpp)
+add_dependencies(offboard_test prometheus_mission_gencpp)
+target_link_libraries(offboard_test ${catkin_LIBRARIES})
+
 
 #############
 ## Install ##

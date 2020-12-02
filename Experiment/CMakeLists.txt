@@ -104,6 +104,15 @@ install(DIRECTORY launch/
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch
 )
 
+
+# set(NODE_NAME "offboard_test")
+# add_executable(${NODE_NAME}
+#     launch_custom/onborad_test_ydm/offb_node.cpp
+#     )
+# target_link_libraries(${NODE_NAME}
+#     ${catkin_LIBRARIES}
+#     )
+# add_dependencies(${NODE_NAME} ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
 #############
 ## Testing ##
 #############
