@@ -1,16 +1,27 @@
 <!-- 本launch为使用px4_pos_controller进行机载控制时的机载端启动脚本 -->
-<launch>
-	<!-- 启动MAVROS -->
-	<node pkg="mavros" type="mavros_node" name="mavros" output="screen">
-		<!-- 不同机载电脑,注意修改fcu_url至正确的端口号及波特率 -->
-		<param name="fcu_url" value="/dev/ttyUSB0:921600" />
-		<param name="gcs_url" value="" />
-		<param name="target_system_id" value="1" />
-		<param name="target_component_id" value="1" />
-		<rosparam command="load" file="$(find prometheus_experiment)/config/mavros_config/px4_pluginlists.yaml" />
-		<rosparam command="load" file="$(find prometheus_experiment)/config/mavros_config/px4_config.yaml" />
-	</node>
-    <node pkg="prometheus_mission" type="offboard_2m" name="test1" output="screen" >
-    </node>
-</launch>
 
+<launch>
+	<!-- vim: set ft=xml noet : -->
+	<!-- example launch script for PX4 based FCU's -->
+
+	<arg name="fcu_url" default="/dev/ttyUSB0:921600" />
+	<arg name="gcs_url" default="" />
+	<arg name="tgt_system" default="1" />
+	<arg name="tgt_component" default="1" />
+	<arg name="log_output" default="screen" />
+	<arg name="fcu_protocol" default="v2.0" />
+	<arg name="respawn_mavros" default="false" />
+
+	<include file="$(find mavros)/launch/node.launch">
+		<arg name="pluginlists_yaml" value="$(find mavros)/launch/px4_pluginlists.yaml" />
+		<arg name="config_yaml" value="$(find mavros)/launch/px4_config.yaml" />
+
+		<arg name="fcu_url" value="$(arg fcu_url)" />
+		<arg name="gcs_url" value="$(arg gcs_url)" />
+		<arg name="tgt_system" value="$(arg tgt_system)" />
+		<arg name="tgt_component" value="$(arg tgt_component)" />
+		<arg name="log_output" value="$(arg log_output)" />
+		<arg name="fcu_protocol" value="$(arg fcu_protocol)" />
+		<arg name="respawn_mavros" default="$(arg respawn_mavros)" />
+	</include>
+</launch>
