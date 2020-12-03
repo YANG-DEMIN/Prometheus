@@ -52,7 +52,5 @@
         <arg name="respawn_mavros" value="$(arg respawn_mavros)"/>
     </include>
 
-	<!--launch node-->
-	<node pkg="prometheus_mission" type="offboard_test" name="test1" output="screen" launch-prefix="gnome-terminal --tab --">
-	</node>
+    
 </launch>

@@ -50,8 +50,6 @@ Visualization Manager:
           Value: true
         odom_ned:
           Value: true
-        uav3:
-          Value: true
         world:
           Value: true
       Marker Scale: 1
@@ -60,15 +58,10 @@ Visualization Manager:
       Show Axes: true
       Show Names: true
       Tree:
-        map:
-          map_ned:
-            {}
         world:
           base_link:
             base_link_frd:
               {}
-          uav3:
-            {}
       Update Interval: 0
       Value: true
     - Alpha: 0.5
@@ -193,25 +186,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 8.334606170654297
+      Distance: 3.9640157222747803
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: -1.1448005437850952
-        Y: 1.7814745903015137
-        Z: -0.4501960873603821
+        X: -1.3611921072006226
+        Y: 1.2945659160614014
+        Z: -0.6652801036834717
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.37539833784103394
+      Pitch: 0.3953987658023834
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 0.84539794921875
+      Yaw: 5.478581428527832
     Saved: ~
 Window Geometry:
   Displays:
@@ -229,5 +222,5 @@ Window Geometry:
   Views:
     collapsed: false
   Width: 1440
-  X: 445
-  Y: 186
+  X: 1715
+  Y: 212

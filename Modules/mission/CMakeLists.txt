@@ -54,6 +54,8 @@ include_directories(
   include
   ${catkin_INCLUDE_DIRS}
   ../common/include
+  ../control/include
+
 )
 
 
@@ -116,9 +118,17 @@ add_executable(fake_detectioninfo test/fake_detectioninfo.cpp)
 add_dependencies(fake_detectioninfo prometheus_mission_gencpp)
 target_link_libraries(fake_detectioninfo ${catkin_LIBRARIES})
 
-add_executable(offboard_test test/offb_node.cpp)
-add_dependencies(offboard_test prometheus_mission_gencpp)
-target_link_libraries(offboard_test ${catkin_LIBRARIES})
+add_executable(offboard_2m test/offb_node_2m.cpp)
+add_dependencies(offboard_2m prometheus_mission_gencpp)
+target_link_libraries(offboard_2m ${catkin_LIBRARIES})
+
+add_executable(circular test/circular.cpp)
+add_dependencies(circular prometheus_mission_gencpp)
+target_link_libraries(circular ${catkin_LIBRARIES})
+
+add_executable(guidance test/guidance.cpp)
+add_dependencies(guidance prometheus_mission_gencpp)
+target_link_libraries(guidance ${catkin_LIBRARIES})
 
 
 #############
