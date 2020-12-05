@@ -32,7 +32,8 @@
 
 using namespace std;
 
-float desire_z = 3.0;				//desired altitude
+float desire_z = 10.0;				//desired altitude
+float desire_Radius = 10.0;		//desired radius of circle
 float MoveTimeCnt = 0.0;
 float priod = 2000.0;			//to change velocity of flying using it
 
@@ -133,21 +134,28 @@ void FlyState_update(void)
 			//cout << "CHECKING" << endl;
 			break;
 		case PREPARE:									//fly to the first point located in x negative axis
-
+			temp_pos_target[0] = temp_pos_drone[0] - desire_Radius;
+			temp_pos_target[1] = temp_pos_drone[1];
+			temp_pos_target[2] = desire_z;
+			MoveTimeCnt += 2;
+			if(MoveTimeCnt >= 500)
+			{
+				FlyState = REST;
+				MoveTimeCnt = 0;
+			}
+			pos_target[0] = temp_pos_drone[0] + (temp_pos_target[0] - temp_pos_drone[0]) * (MoveTimeCnt/500);
+			pos_target[1] = temp_pos_drone[1] + (temp_pos_target[1] - temp_pos_drone[1]) * (MoveTimeCnt/500);
+			pos_target[2] = temp_pos_drone[2] + (temp_pos_target[2] - temp_pos_drone[2]) * (MoveTimeCnt/500);
+			send_pos_setpoint(pos_target, 0);
 			if(current_state.mode != "OFFBOARD")			//if it is switched to "onboard" mode, jump to the "WATTING"
 			{
 				FlyState = WATTING;
 			}
-            else
-            {
-                FlyState = REST;
-            }
-            
 			//cout << "PREPARE" << endl;
 			break;
 		case REST:
-			pos_target[0] = 0;
-			pos_target[1] = 0;
+			pos_target[0] = temp_pos_drone[0] - desire_Radius;
+			pos_target[1] = temp_pos_drone[1];
 			pos_target[2] = desire_z;
 			send_pos_setpoint(pos_target, 0);
 			MoveTimeCnt += 1;
@@ -164,11 +172,17 @@ void FlyState_update(void)
 			break;
 		case FLY:
 			{
-			    pos_target[0] = 0;
-			    pos_target[1] = 0;
-			    pos_target[2] = desire_z;
+				float phase = 3.1415926;
+				float Omega = 2.0 * 3.14159 * MoveTimeCnt / priod;  //0~2pi
+				MoveTimeCnt += 3;
+				if(MoveTimeCnt >= priod)
+				{
+					FlyState = FLYOVER;
+				}
+				pos_target[0] = temp_pos_drone[0] + desire_Radius * cos(Omega + phase);
+				pos_target[1] = temp_pos_drone[1] + desire_Radius * sin(Omega + phase);
+				pos_target[2] = desire_z;
 				send_pos_setpoint(pos_target, 0);
-
 				if(current_state.mode != "OFFBOARD")			//if it is switched to "onboard" mode, jump to the "WATTING"
 				{
 					FlyState = WATTING;
@@ -192,18 +206,20 @@ void FlyState_update(void)
 
 int main(int argc, char **argv)
 {
-	ros::init(argc, argv, "offb_node_2m");
+	ros::init(argc, argv, "circular_uav0");
 	ros::NodeHandle nh("~");
 	ros::Rate rate(20.0);
 
-	ros::Subscriber position_sub = nh.subscribe<geometry_msgs::PoseStamped>("/mavros/local_position/pose", 100, pos_cb);
-	ros::Subscriber state_sub = nh.subscribe<mavros_msgs::State>("/mavros/state", 10, state_cb);			//handle return function
+	ros::Subscriber position_sub = nh.subscribe<geometry_msgs::PoseStamped>("/uav0/mavros/local_position/pose", 100, pos_cb);
+	ros::Subscriber state_sub = nh.subscribe<mavros_msgs::State>("/uav0/mavros/state", 10, state_cb);			//handle return function
 
-	setpoint_raw_local_pub = nh.advertise<mavros_msgs::PositionTarget>("/mavros/setpoint_raw/local", 10);
+	setpoint_raw_local_pub = nh.advertise<mavros_msgs::PositionTarget>("/uav0/mavros/setpoint_raw/local", 10);
 
-	set_mode_client = nh.serviceClient<mavros_msgs::SetMode>("/mavros/set_mode");			//little question
+	set_mode_client = nh.serviceClient<mavros_msgs::SetMode>("/uav0/mavros/set_mode");			//little question
+		nh.param<float>("desire_z", desire_z, 10.0);
+		nh.param<float>("desire_Radius", desire_Radius, 10.0);
 
-	cout << "offb_node_2m node started!!!" << endl; 
+	cout << "circular node started!!!" << endl; 
 
 	while(1)
 	{
@@ -214,3 +230,8 @@ int main(int argc, char **argv)
 	}
 	return 0;
 }
+
+
+
+
+

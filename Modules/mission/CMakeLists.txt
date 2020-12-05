@@ -126,6 +126,14 @@ add_executable(circular test/circular.cpp)
 add_dependencies(circular prometheus_mission_gencpp)
 target_link_libraries(circular ${catkin_LIBRARIES})
 
+add_executable(circular_uav0 test/circular_uav0.cpp)
+add_dependencies(circular_uav0 prometheus_mission_gencpp)
+target_link_libraries(circular_uav0 ${catkin_LIBRARIES})
+
+add_executable(target_uav1 test/target_uav1.cpp)
+add_dependencies(target_uav1 prometheus_mission_gencpp)
+target_link_libraries(target_uav1 ${catkin_LIBRARIES})
+
 add_executable(guidance test/guidance.cpp)
 add_dependencies(guidance prometheus_mission_gencpp)
 target_link_libraries(guidance ${catkin_LIBRARIES})
