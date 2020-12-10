@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.0.2)
 project(test_nlink)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
-# add_compile_options(-std=c++11)
+add_compile_options(-std=c++11)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -152,7 +152,7 @@ include_directories(
 #   ${catkin_LIBRARIES}
 # )
 
-set(NODE_NAME "linktrack_example")
+set(NODE_NAME "linktrack_subscriber")
 add_executable(${NODE_NAME}
     src/subscriber.cpp
     )
@@ -161,6 +161,14 @@ target_link_libraries(${NODE_NAME}
     )
 add_dependencies(${NODE_NAME} ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
 
+set(NODE_NAME "linktrack_transmitter")
+add_executable(${NODE_NAME}
+    src/transmitter.cpp
+    )
+target_link_libraries(${NODE_NAME}
+    ${catkin_LIBRARIES}
+    )
+add_dependencies(${NODE_NAME} ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
 #############
 ## Install ##
 #############

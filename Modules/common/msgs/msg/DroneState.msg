@@ -16,5 +16,6 @@ float32 time_from_start             ## [s]
 float32[3] position                 ## [m]
 float32[3] velocity                 ## [m/s]
 float32[3] attitude                 ## [rad]
+##此处添加加速度信息
 geometry_msgs/Quaternion attitude_q ## 四元数
 float32[3] attitude_rate            ## [rad/s]

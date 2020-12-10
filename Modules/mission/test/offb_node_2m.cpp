@@ -32,7 +32,7 @@
 
 using namespace std;
 
-float desire_z = 3.0;				//desired altitude
+float desire_z = 2.0;				//desired altitude
 float MoveTimeCnt = 0.0;
 float priod = 2000.0;			//to change velocity of flying using it
 
@@ -205,7 +205,7 @@ int main(int argc, char **argv)
 
 	cout << "offb_node_2m node started!!!" << endl; 
 
-	while(1)
+	while(ros::ok())
 	{
 		FlyState_update();
 		ros::spinOnce();

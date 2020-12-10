@@ -6,7 +6,7 @@ void tagframe0Callback(const nlink_parser::LinktrackNodeframe2 &msg) {
 }
 
 int main(int argc, char **argv) {
-  ros::init(argc, argv, "linktrack_example");
+  ros::init(argc, argv, "linktrack_subscriber");
   ros::NodeHandle nh;
 
   ros::Subscriber sub = 
