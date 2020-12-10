@@ -221,7 +221,7 @@ int main(int argc, char **argv)
 
 	cout << "circular node started!!!" << endl; 
 
-	while(1)
+	while(ros::ok())
 	{
 		FlyState_update();
 		ros::spinOnce();
