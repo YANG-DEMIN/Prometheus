@@ -25,5 +25,6 @@
 		<arg name="respawn_mavros" default="$(arg respawn_mavros)" />
 	</include>
 
-	<node pkg="prometheus_mission" type="offboard_2m" name="offb_2m" />
+	<node pkg="prometheus_mission" type="offboard_2m" name="offb_2m" output="screen">
+	</node>
 </launch>
