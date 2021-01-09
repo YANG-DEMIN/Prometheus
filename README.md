@@ -84,3 +84,6 @@ Prometheus是一套开源的**自主无人机软件平台**，为无人机的智
  - 本项目受 BSD 3-Clause 协议保护。点击 [LICENSE](https://github.com/amov-lab/Prometheus/blob/master/LICENSE)了解更多
  - 本项目仅限个人使用，请勿用于商业用途。
  - 如利用本项目进行营利活动，阿木实验室将追究侵权行为。
+
+ 移植至机载计算机的说明：
+ 1. 需要下载nlink_paser并编译
