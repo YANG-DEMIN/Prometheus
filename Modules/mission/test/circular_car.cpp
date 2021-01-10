@@ -3,9 +3,9 @@
  *
  * Author: Ydm
  *
- * Update Time: 2020.8.14
+ * Update Time: 2021.1.10
  *
- * descripation: demostration of circular flying using mavros
+ * descripation: demostration of circular driving using mavros
  *      1.
  *      2.
  *      3.
@@ -35,7 +35,7 @@ using namespace std;
 float desire_z = 0.0;				//desired altitude
 float desire_Radius = 2.0;		//desired radius of circle
 float MoveTimeCnt = 0.0;
-float priod = 2000.0;			//to change velocity of flying using it
+float priod = 1200.0;			//to change velocity of flying using it
 
 Eigen::Vector3d pos_target; 	//desired value in offboard mode
 Eigen::Vector3d temp_pos_drone;	
@@ -64,7 +64,7 @@ void pos_cb(const geometry_msgs::PoseStamped::ConstPtr &msg)
 	pos_drone = pos_drone_fcu_enu;
 }
 
-//receive the current position of drone from controller
+//receive the current state of drone from controller
 mavros_msgs::State current_state;
 void state_cb(const mavros_msgs::State::ConstPtr& msg)
 {
@@ -75,7 +75,7 @@ void state_cb(const mavros_msgs::State::ConstPtr& msg)
 void send_pos_setpoint(const Eigen::Vector3d& pos_sp, float yaw_sp)
 {
 	mavros_msgs::PositionTarget pos_setpoint;
-	pos_setpoint.type_mask = 0b100111111000;	//0b 100 111 111 000 xyz + yaw 
+	pos_setpoint.type_mask = 0b000111111000;	//0b 100 111 111 000 xyz + yaw 
 
 	//Bitmask to indicate which dimensions should be ignored (1 means ignore, 0 means not ignore; Bit 10 must set to 0)
 	//Bit 1:x, bit 2:y, bit 3:z, bit 4:vx, bit 5:vy, bit 6:vz, bit 7: ax, bit 8:ay, bit 9:az, bit 10:is_force_sp, bit 11: yaw, bit 12:yaw_rate
@@ -87,7 +87,7 @@ void send_pos_setpoint(const Eigen::Vector3d& pos_sp, float yaw_sp)
 	pos_setpoint.position.y = pos_sp[1];
 	pos_setpoint.position.z = pos_sp[2];
 
-	pos_setpoint.yaw = yaw_sp;
+	//pos_setpoint.yaw = yaw_sp;
 
 	setpoint_raw_local_pub.publish(pos_setpoint);
 }
@@ -115,7 +115,7 @@ void FlyState_update(void)
 				send_pos_setpoint(pos_target, 0);
 				FlyState = CHECKING;
 			}
-			//cout << "WATTING" << endl;
+			cout << "WATTING" << endl;
 			break;
 
 		case CHECKING:
@@ -131,14 +131,14 @@ void FlyState_update(void)
 				FlyState = PREPARE;
 				MoveTimeCnt = 0;
 			}
-			//cout << "CHECKING" << endl;
+			cout << "CHECKING" << endl;
 			break;
 		case PREPARE:									//fly to the first point located in x negative axis
 			temp_pos_target[0] = temp_pos_drone[0] - desire_Radius;
 			temp_pos_target[1] = temp_pos_drone[1];
 			temp_pos_target[2] = desire_z;
 			MoveTimeCnt += 2;
-			if(MoveTimeCnt >= 500)
+			if(MoveTimeCnt >= 100)
 			{
 				FlyState = REST;
 				MoveTimeCnt = 0;
@@ -151,7 +151,7 @@ void FlyState_update(void)
 			{
 				FlyState = WATTING;
 			}
-			//cout << "PREPARE" << endl;
+			cout << "PREPARE" << endl;
 			break;
 		case REST:
 			pos_target[0] = temp_pos_drone[0] - desire_Radius;
@@ -159,7 +159,7 @@ void FlyState_update(void)
 			pos_target[2] = desire_z;
 			send_pos_setpoint(pos_target, 0);
 			MoveTimeCnt += 1;
-			if(MoveTimeCnt >= 100)
+			if(MoveTimeCnt >= 50)
 			{
 				MoveTimeCnt = 0;
 				FlyState = FLY;
@@ -168,7 +168,7 @@ void FlyState_update(void)
 			{
 				FlyState = WATTING;
 			}
-			//cout << "REST" << endl;
+			cout << "REST" << endl;
 			break;
 		case FLY:
 			{
@@ -188,7 +188,7 @@ void FlyState_update(void)
 					FlyState = WATTING;
 				}
 			}
-			//cout << "FLY" << endl;
+			cout << "FLY" << endl;
 			break;
 		case FLYOVER:
 			{
@@ -216,8 +216,8 @@ int main(int argc, char **argv)
 	setpoint_raw_local_pub = nh.advertise<mavros_msgs::PositionTarget>("/mavros/setpoint_raw/local", 10);
 
 	set_mode_client = nh.serviceClient<mavros_msgs::SetMode>("/mavros/set_mode");			//little question
-		nh.param<float>("desire_z", desire_z, 10.0);
-		nh.param<float>("desire_Radius", desire_Radius, 10.0);
+		nh.param<float>("desire_z", desire_z, 0.0);
+		nh.param<float>("desire_Radius", desire_Radius, 2.0);
 
 	cout << "circular node started!!!" << endl; 
 

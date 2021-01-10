@@ -25,5 +25,5 @@
 		<arg name="respawn_mavros" default="$(arg respawn_mavros)" />
 	</include>
 
-	<node pkg="prometheus_mission" type="circular_car" name="offb_circular" />
+	<node pkg="prometheus_mission" type="circular_car" name="offb_circular" output="screen" />
 </launch>
