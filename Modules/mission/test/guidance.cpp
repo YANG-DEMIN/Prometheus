@@ -372,13 +372,13 @@ int main(int argc, char **argv)
 	ros::NodeHandle nh;
 	
    	ros::Subscriber target_sub = nh.subscribe<std_msgs::String>("/nlink_linktrack_data_transmission", 100, target_cb);	
-	ros::Subscriber state_sub = nh.subscribe<mavros_msgs::State>("/uav/mavros/state", 10, state_cb);			//handle return function	
-    ros::Subscriber position_sub = nh.subscribe<geometry_msgs::PoseStamped>("/uav/mavros/local_position/pose", 100, pos_cb);
-	ros::Subscriber attitude_sub = nh.subscribe<sensor_msgs::Imu>("/uav/mavros/imu/data", 10, att_cb);
+	ros::Subscriber state_sub = nh.subscribe<mavros_msgs::State>("/mavros/state", 10, state_cb);			//handle return function	
+    ros::Subscriber position_sub = nh.subscribe<geometry_msgs::PoseStamped>("/mavros/local_position/pose", 100, pos_cb);
+	ros::Subscriber attitude_sub = nh.subscribe<sensor_msgs::Imu>("/mavros/imu/data", 10, att_cb);
 
-	setpoint_raw_local_pub = nh.advertise<mavros_msgs::PositionTarget>("/uav/mavros/setpoint_raw/local", 10);
+	setpoint_raw_local_pub = nh.advertise<mavros_msgs::PositionTarget>("/mavros/setpoint_raw/local", 10);
 
-	set_mode_client = nh.serviceClient<mavros_msgs::SetMode>("/uav/mavros/set_mode");			//little question
+	set_mode_client = nh.serviceClient<mavros_msgs::SetMode>("/mavros/set_mode");			//little question
 		nh.param<float>("desire_z", desire_z, 10.0);
 		nh.param<float>("desire_Radius", desire_Radius, 10.0);
 
