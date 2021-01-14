@@ -22,12 +22,10 @@
 #include <stdlib.h>
 #include <iostream>
 #include <stdio.h>
-#include <iostream>
 #include <math_utils.h>
 #include <Eigen/Eigen>
 
 #include <std_msgs/Bool.h>
-#include <std_msgs/String.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/TwistStamped.h>
 #include <sensor_msgs/Imu.h>
@@ -119,25 +117,12 @@ void state_cb(const mavros_msgs::State::ConstPtr& msg)
 	current_state = *msg;
 }
 
-float str2float(string str)
+void target_cb(const geometry_msgs::PoseStamped::ConstPtr &msg)
 {
-  float result;
-  stringstream stream(str);
-  stream >> result;
-  return result;
-}
+	//read the drone postion from the Mavros Package [Frame: ENU]
+	Eigen::Vector3d pos_target_fcu_enu(msg->pose.position.x, msg->pose.position.y, msg->pose.position.z);
 
-void target_cb(const std_msgs::String::ConstPtr& msg)
-{
-  int num = msg->data.size();
-  P_T[0] = str2float(msg->data.substr(8,15));
-  P_T[1] = str2float(msg->data.substr(18,25));
-  P_T[2] = str2float(msg->data.substr(28,35));
-  //东北天坐标系
-  //printf("the size of string is %d\n",num);
-  printf("%f\n", P_T[0]);
-  printf("%f\n", P_T[1]);
-  printf("%f\n", P_T[2]);
+	P_T = pos_target_fcu_enu;
 }
 
 void Guidance_Update(void)
@@ -371,14 +356,14 @@ int main(int argc, char **argv)
 	ros::init(argc, argv, "circular_offboard");
 	ros::NodeHandle nh;
 	
-   	ros::Subscriber target_sub = nh.subscribe<std_msgs::String>("/nlink_linktrack_data_transmission", 100, target_cb);	
-	ros::Subscriber state_sub = nh.subscribe<mavros_msgs::State>("/uav/mavros/state", 10, state_cb);			//handle return function	
-    ros::Subscriber position_sub = nh.subscribe<geometry_msgs::PoseStamped>("/uav/mavros/local_position/pose", 100, pos_cb);
-	ros::Subscriber attitude_sub = nh.subscribe<sensor_msgs::Imu>("/uav/mavros/imu/data", 10, att_cb);
+   	ros::Subscriber target_sub = nh.subscribe<geometry_msgs::PoseStamped>("/uav1/mavros/local_position/pose", 100, target_cb);	
+	ros::Subscriber state_sub = nh.subscribe<mavros_msgs::State>("/uav0/mavros/state", 10, state_cb);			//handle return function	
+    ros::Subscriber position_sub = nh.subscribe<geometry_msgs::PoseStamped>("/uav0/mavros/local_position/pose", 100, pos_cb);
+	ros::Subscriber attitude_sub = nh.subscribe<sensor_msgs::Imu>("/uav0/mavros/imu/data", 10, att_cb);
 
-	setpoint_raw_local_pub = nh.advertise<mavros_msgs::PositionTarget>("/uav/mavros/setpoint_raw/local", 10);
+	setpoint_raw_local_pub = nh.advertise<mavros_msgs::PositionTarget>("/uav0/mavros/setpoint_raw/local", 10);
 
-	set_mode_client = nh.serviceClient<mavros_msgs::SetMode>("/uav/mavros/set_mode");			//little question
+	set_mode_client = nh.serviceClient<mavros_msgs::SetMode>("/uav0/mavros/set_mode");			//little question
 		nh.param<float>("desire_z", desire_z, 10.0);
 		nh.param<float>("desire_Radius", desire_Radius, 10.0);
 

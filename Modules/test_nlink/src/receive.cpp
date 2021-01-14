@@ -6,8 +6,8 @@
 * Update Time: 2020.12.08
 *
 * Introduction:   
-*   1. 订阅AnchorFrame0协议消息并将两个tag位置信息打印在终端
-    2. 发送target位置至UAV，通过LinktrackNode2消息
+*   1. 订阅来自两个节点的NodeFrame2协议消息并打印在终端
+    2. 发送target位置至UAV
 ***************************************************************************************************************************/
 #include <ros/ros.h>
 #include <nlink_parser/LinktrackNodeframe2.h>
@@ -67,12 +67,10 @@ int main(int argc, char **argv) {
   ros::NodeHandle nh;
   ros::Rate rate(10.0);
 
-  std::cout << "Transmitter Started !!!";
   ros::Subscriber anchor_sub = 
 	nh.subscribe("nlink_linktrack_anchorframe0", 1000, Anchorframe0Callback);
 
   ros::Publisher send_location_pub = nh.advertise<std_msgs::String>("/nlink_linktrack_data_transmission", 10);
-  std::cout << " nlink_linktrack_data_transmission has been advertised,use 'rostopic echo /nlink_linktrack_data_transmission' to view the data";
   str.data = "target: " + std::to_string(target_pos[0]) + "  "+ std::to_string(target_pos[1]) + "  "+ std::to_string(target_pos[2]);
   	while(ros::ok())
 	{
