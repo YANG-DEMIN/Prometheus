@@ -28,7 +28,7 @@ void Anchorframe0Callback(const nlink_parser::LinktrackAnchorframe0::ConstPtr &m
 
   for(auto &item : msg->nodes)
   {
-    if(item.id == 1)
+    if(item.id == 2)
     {
       target_id = item.id;
       target_pos[0] = item.pos_3d[0];
@@ -36,7 +36,7 @@ void Anchorframe0Callback(const nlink_parser::LinktrackAnchorframe0::ConstPtr &m
       target_pos[2] = item.pos_3d[2];
     }
 
-    if(item.id == 2)
+    if(item.id == 1)
     {
       uav_id = item.id;
       uav_pos[0] = item.pos_3d[0];
@@ -46,15 +46,15 @@ void Anchorframe0Callback(const nlink_parser::LinktrackAnchorframe0::ConstPtr &m
 
   }
   printf("SystemTime: %d\n", msg->system_time);
-  printf("Target:\n");
-  printf("\tID: %d\n", target_id);
+  printf("UAV:\n");
+  printf("\tID: %d\n", uav_id);
   printf("\tposition:\n");
   printf("\t\tx: %f\n", uav_pos[0]);
   printf("\t\ty: %f\n", uav_pos[1]);
   printf("\t\tz: %f\n", uav_pos[2]);
 
-  printf("UAV:\n");
-  printf("\tID: %d\n", uav_id);
+  printf("Target:\n");
+  printf("\tID: %d\n", target_id);
   printf("\tposition:\n");
   printf("\t\tx: %f\n", target_pos[0]);
   printf("\t\ty: %f\n", target_pos[1]);
@@ -73,9 +73,10 @@ int main(int argc, char **argv) {
 
   ros::Publisher send_location_pub = nh.advertise<std_msgs::String>("/nlink_linktrack_data_transmission", 10);
   std::cout << " nlink_linktrack_data_transmission has been advertised,use 'rostopic echo /nlink_linktrack_data_transmission' to view the data";
-  str.data = "target: " + std::to_string(target_pos[0]) + "  "+ std::to_string(target_pos[1]) + "  "+ std::to_string(target_pos[2]);
+  
   	while(ros::ok())
 	{
+    str.data = "target: " + std::to_string(target_pos[0]) + "  "+ std::to_string(target_pos[1]) + "  "+ std::to_string(target_pos[2]);
 		send_location_pub.publish(str);
 		ros::spinOnce();
 		rate.sleep();
