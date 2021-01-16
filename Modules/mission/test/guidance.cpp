@@ -133,19 +133,25 @@ void target_cb(const std_msgs::String::ConstPtr& msg)
   P_T[0] = str2float(msg->data.substr(8,15));
   P_T[1] = str2float(msg->data.substr(18,25));
   P_T[2] = str2float(msg->data.substr(28,35));
+
+  P_M[0] = str2float(msg->data.substr(43,50));
+  P_M[1] = str2float(msg->data.substr(53,60));
+  P_M[2] = str2float(msg->data.substr(63,70));
   //东北天坐标系
   //printf("the size of string is %d\n",num);
-  printf("%f\n", P_T[0]);
-  printf("%f\n", P_T[1]);
-  printf("%f\n", P_T[2]);
+  //printf("%f\n", P_T[0]);
+  //printf("%f\n", P_T[1]);
+  //printf("%f\n", P_T[2]);
 }
+
+
 
 void Guidance_Update(void)
 {
 	//update the position
-	P_M = position_get;
+	//P_M = position_get;
 	//cout << "P_M = position_get = " << P_M <<endl; 		//yes, i get the right position
-	P_T= P_T;
+	//P_T= P_T;
 	
 	//update the attitude
 	phi = attitude_get[0];
@@ -205,6 +211,7 @@ void pos_cb(const geometry_msgs::PoseStamped::ConstPtr &msg)
 
 	pos_drone = pos_drone_fcu_enu;
 	position_get = pos_drone;
+	//cout << position_get << endl;
 }
 
 void vel_cb(const geometry_msgs::TwistStamped::ConstPtr &msg)

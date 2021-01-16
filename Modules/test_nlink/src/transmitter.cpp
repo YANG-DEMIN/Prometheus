@@ -76,7 +76,8 @@ int main(int argc, char **argv) {
   
   	while(ros::ok())
 	{
-    str.data = "target: " + std::to_string(target_pos[0]) + "  "+ std::to_string(target_pos[1]) + "  "+ std::to_string(target_pos[2]);
+    str.data = "target: " + std::to_string(target_pos[0]) + "  "+ std::to_string(target_pos[1]) + "  "+ std::to_string(target_pos[2]) + " " +
+                "uav: " + std::to_string(uav_pos[0]) + "  "+ std::to_string(uav_pos[1]) + "  "+ std::to_string(uav_pos[2]);
 		send_location_pub.publish(str);
 		ros::spinOnce();
 		rate.sleep();
