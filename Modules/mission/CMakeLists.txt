@@ -134,6 +134,10 @@ add_executable(target_uav1 test/target_uav1.cpp)
 add_dependencies(target_uav1 prometheus_mission_gencpp)
 target_link_libraries(target_uav1 ${catkin_LIBRARIES})
 
+add_executable(guidance_sitl test/guidance_sitl.cpp)
+add_dependencies(guidance_sitl prometheus_mission_gencpp)
+target_link_libraries(guidance_sitl ${catkin_LIBRARIES})
+
 add_executable(guidance test/guidance.cpp)
 add_dependencies(guidance prometheus_mission_gencpp)
 target_link_libraries(guidance ${catkin_LIBRARIES})

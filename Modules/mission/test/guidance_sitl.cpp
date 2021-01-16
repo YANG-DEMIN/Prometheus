@@ -5,7 +5,7 @@
  *
  * Update Time: 2020.8.14
  *
- * descripation: demostration of circular flying using mavros
+ * descripation: demostration of proportion guidance on sitl model
  *      1.
  *      2.
  *      3.

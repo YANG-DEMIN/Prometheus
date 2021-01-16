@@ -345,7 +345,7 @@ void FlyState_update(void)
 				{
 					FlyState = WATTING;
 				}
-				if(abs(P_r[0]*P_r[0] + P_r[1]*P_r[1] + P_r[2]*P_r[2]) < 2)
+				if(abs(P_r[0]*P_r[0] + P_r[1]*P_r[1] + P_r[2]*P_r[2]) < 0.5)
 				{
 					cout << "I hit it !!!" << endl;
 					FlyState = FLYOVER;
