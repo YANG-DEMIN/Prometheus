@@ -357,9 +357,9 @@ int main(int argc, char **argv)
 		cout<< "\t" << P_T[1] << "\t" << P_M[1] << endl;
 		cout<< "\t" << P_T[2] << "\t" << P_M[2] << endl;
 
-		//cout << "sita = " << sita << endl;
-		//cout << "psi_v = " << psi_v << endl;
-		//cout << "V_M = " << endl << V_M << endl;
+		cout << "vx = " << V_M[0] << endl;
+		cout << "vy = " << V_M[1] << endl;
+		cout << "vz = " << V_M[2] << endl;
 
 	}
 	return 0;
