@@ -138,9 +138,9 @@ add_executable(guidance_sitl test/guidance_sitl.cpp)
 add_dependencies(guidance_sitl prometheus_mission_gencpp)
 target_link_libraries(guidance_sitl ${catkin_LIBRARIES})
 
-add_executable(guidance test/guidance.cpp)
-add_dependencies(guidance prometheus_mission_gencpp)
-target_link_libraries(guidance ${catkin_LIBRARIES})
+add_executable(guidance_car test/guidance_car.cpp)
+add_dependencies(guidance_car prometheus_mission_gencpp)
+target_link_libraries(guidance_car ${catkin_LIBRARIES})
 
 add_executable(servo_test test/servo_test.cpp)
 add_dependencies(servo_test prometheus_mission_gencpp)
@@ -149,6 +149,8 @@ target_link_libraries(servo_test ${catkin_LIBRARIES})
 add_executable(circular_car test/circular_car.cpp)
 add_dependencies(circular_car prometheus_mission_gencpp)
 target_link_libraries(circular_car ${catkin_LIBRARIES})
+
+
 #############
 ## Install ##
 #############

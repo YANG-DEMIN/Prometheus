@@ -144,66 +144,6 @@ void target_cb(const std_msgs::String::ConstPtr& msg)
   //printf("%f\n", P_T[2]);
 }
 
-
-
-void Guidance_Update(void)
-{
-	//update the position
-	//P_M = position_get;
-	//cout << "P_M = position_get = " << P_M <<endl; 		//yes, i get the right position
-	//P_T= P_T;
-	
-	//update the attitude
-	phi = attitude_get[0];
-	gamma_vehicle = attitude_get[1];
-	psi = attitude_get[2];
-
-	L << cos(phi) * cos(psi), -sin(phi) * cos(psi) * cos(gamma_vehicle) + sin(psi) * sin(gamma_vehicle), sin(phi) * cos(psi) * sin(gamma_vehicle) + sin(psi) * cos(gamma_vehicle),
-    sin(phi), cos(phi) * cos(gamma_vehicle), -cos(phi) * sin(gamma_vehicle),
-    -cos(phi) * sin(psi), sin(phi) * sin(psi) * cos(gamma_vehicle) + cos(psi) * sin(gamma_vehicle), -sin(phi) * sin(psi) * sin(gamma_vehicle) + cos(psi) * cos(gamma_vehicle);
-	double L11 = L(0, 0);
-	double L12 = L(0, 1);
-	double L13 = L(0, 2);
-	double L21 = L(1, 0);
-	double L22 = L(1, 1);
-	double L23 = L(1, 2);
-	double L31 = L(2, 0);
-	double L32 = L(2, 1);
-	double L33 = L(2, 2);
-
-	x_r_last = x_r;		//Because the feather of atan function 
-	y_r_last = y_r;
-	z_r_last = z_r;
-
-	P_r = P_T - P_M;
-	x_r = P_r[0];
-	y_r = P_r[1];
-	z_r = P_r[2];
-
-	q_lambda = atan(y_r /x_r);
-   	q_gamma = - atan(z_r/sqrt(x_r * x_r + y_r * y_r));
-    q_lambda_last = atan(y_r_last/x_r_last);
-    q_gamma_last = - atan(z_r_last/sqrt(x_r_last * x_r_last + y_r_last * y_r_last));
-    q_lambda_delta = q_lambda - q_lambda_last;
-   	q_gamma_delta = q_gamma - q_gamma_last;
-	
-	delta_sita = K1 * q_gamma_delta;
-    delta_psi_v = K2 * q_lambda_delta;
-	if (delta_sita > 1 || delta_psi_v > 1)
-	{
-		delta_psi_v = 0;
-		delta_sita = 0;
-	}
-	//cout << "I come in, and now psi_v = " << psi_v  << " sita = " << sita << endl;	
-	sita = sita + delta_sita;
-   	psi_v = psi_v + delta_psi_v;
-	//cout << "I come out, and now psi_v = " << psi_v  << " sita = " << sita << endl;
-	
-	//cout << "psi_v = " << psi_v << endl;
-	V_M << VM * cos(sita) * cos(psi_v), VM * cos(sita) * sin(psi_v), VM * sin(- sita);
-
-}
-
 void pos_cb(const geometry_msgs::PoseStamped::ConstPtr &msg)
 {
 	//read the drone postion from the Mavros Package [Frame: ENU]
@@ -275,6 +215,64 @@ void send_pos_setpoint(const Eigen::Vector3d& pos_sp, float yaw_sp)
 	pos_setpoint.yaw = yaw_sp;
 
 	setpoint_raw_local_pub.publish(pos_setpoint);
+}
+
+void Guidance_Update(void)
+{
+	//update the position
+	//P_M = position_get;
+	//cout << "P_M = position_get = " << P_M <<endl; 		//yes, i get the right position
+	//P_T= P_T;
+	
+	//update the attitude
+	phi = attitude_get[0];
+	gamma_vehicle = attitude_get[1];
+	psi = attitude_get[2];
+
+	L << cos(phi) * cos(psi), -sin(phi) * cos(psi) * cos(gamma_vehicle) + sin(psi) * sin(gamma_vehicle), sin(phi) * cos(psi) * sin(gamma_vehicle) + sin(psi) * cos(gamma_vehicle),
+    sin(phi), cos(phi) * cos(gamma_vehicle), -cos(phi) * sin(gamma_vehicle),
+    -cos(phi) * sin(psi), sin(phi) * sin(psi) * cos(gamma_vehicle) + cos(psi) * sin(gamma_vehicle), -sin(phi) * sin(psi) * sin(gamma_vehicle) + cos(psi) * cos(gamma_vehicle);
+	double L11 = L(0, 0);
+	double L12 = L(0, 1);
+	double L13 = L(0, 2);
+	double L21 = L(1, 0);
+	double L22 = L(1, 1);
+	double L23 = L(1, 2);
+	double L31 = L(2, 0);
+	double L32 = L(2, 1);
+	double L33 = L(2, 2);
+
+	x_r_last = x_r;		//Because the feather of atan function 
+	y_r_last = y_r;
+	z_r_last = z_r;
+
+	P_r = P_T - P_M;
+	x_r = P_r[0];
+	y_r = P_r[1];
+	z_r = P_r[2];
+
+	q_lambda = atan(y_r /x_r);
+   	q_gamma = - atan(z_r/sqrt(x_r * x_r + y_r * y_r));
+    q_lambda_last = atan(y_r_last/x_r_last);
+    q_gamma_last = - atan(z_r_last/sqrt(x_r_last * x_r_last + y_r_last * y_r_last));
+    q_lambda_delta = q_lambda - q_lambda_last;
+   	q_gamma_delta = q_gamma - q_gamma_last;
+	
+	delta_sita = K1 * q_gamma_delta;
+    delta_psi_v = K2 * q_lambda_delta;
+	if (delta_sita > 1 || delta_psi_v > 1)
+	{
+		delta_psi_v = 0;
+		delta_sita = 0;
+	}
+	//cout << "I come in, and now psi_v = " << psi_v  << " sita = " << sita << endl;	
+	sita = sita + delta_sita;
+   	psi_v = psi_v + delta_psi_v;
+	//cout << "I come out, and now psi_v = " << psi_v  << " sita = " << sita << endl;
+	
+	//cout << "psi_v = " << psi_v << endl;
+	V_M << VM * cos(sita) * cos(psi_v), VM * cos(sita) * sin(psi_v), VM * sin(- sita);
+
 }
 
 void FlyState_update(void)
