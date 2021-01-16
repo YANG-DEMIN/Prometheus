@@ -139,10 +139,10 @@ void target_cb(const std_msgs::String::ConstPtr& msg)
   P_M[1] = str2float(msg->data.substr(53,60));
   P_M[2] = str2float(msg->data.substr(63,70));
   //东北天坐标系
-  printf("the size of string is %d\n",num);
-  printf("%f\n", P_M[0]);
-  printf("%f\n", P_M[1]);
-  printf("%f\n", P_M[2]);
+  //printf("the size of string is %d\n",num);
+  //printf("%f\n", P_M[0]);
+  //printf("%f\n", P_M[1]);
+  //printf("%f\n", P_M[2]);
 }
 
 void pos_cb(const geometry_msgs::PoseStamped::ConstPtr &msg)
