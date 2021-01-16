@@ -139,10 +139,10 @@ void target_cb(const std_msgs::String::ConstPtr& msg)
   P_M[1] = str2float(msg->data.substr(53,60));
   P_M[2] = str2float(msg->data.substr(63,70));
   //东北天坐标系
-  //printf("the size of string is %d\n",num);
-  //printf("%f\n", P_T[0]);
-  //printf("%f\n", P_T[1]);
-  //printf("%f\n", P_T[2]);
+  printf("the size of string is %d\n",num);
+  printf("%f\n", P_M[0]);
+  printf("%f\n", P_M[1]);
+  printf("%f\n", P_M[2]);
 }
 
 void pos_cb(const geometry_msgs::PoseStamped::ConstPtr &msg)
@@ -151,8 +151,7 @@ void pos_cb(const geometry_msgs::PoseStamped::ConstPtr &msg)
 	Eigen::Vector3d pos_drone_fcu_enu(msg->pose.position.x, msg->pose.position.y, msg->pose.position.z);
 
 	pos_drone = pos_drone_fcu_enu;
-	position_get = pos_drone;
-	//cout << position_get << endl;
+
 }
 
 void vel_cb(const geometry_msgs::TwistStamped::ConstPtr &msg)
