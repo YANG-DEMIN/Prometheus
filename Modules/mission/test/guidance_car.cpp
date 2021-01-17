@@ -180,7 +180,7 @@ void att_cb(const sensor_msgs::Imu::ConstPtr& msg)
  }
 
 //send the desired position to controller (vx, vy, vz)
-void send_vel_setpoint(const Eigen::Vector3d& vel_sp, double yaw_sp)
+void send_vel_setpoint(const Eigen::Vector3d& vel_sp)
 {
 	mavros_msgs::PositionTarget pos_setpoint;
 	pos_setpoint.type_mask = 0b110111000111;	//0b 110 111 000 111  velocity
@@ -195,7 +195,7 @@ void send_vel_setpoint(const Eigen::Vector3d& vel_sp, double yaw_sp)
 	pos_setpoint.velocity.y = vel_sp[1];
 	pos_setpoint.velocity.z = vel_sp[2];
 
-	pos_setpoint.yaw = yaw_sp;
+	//pos_setpoint.yaw = yaw_sp;
 
 	setpoint_raw_local_pub.publish(pos_setpoint);
 }
@@ -344,7 +344,7 @@ void FlyState_update(void)
 				velocity_sp = V_M;
 				//velocity_sp = {0.5,0.5,0};
 				//send_actuator_setpoint(Actuator_sp);
-				send_vel_setpoint(velocity_sp, yaw_target);
+				send_vel_setpoint(velocity_sp);
 				//cout << "I am here!!! " << endl;
 				if(current_state.mode != "OFFBOARD")			//if it is switched to "onboard" mode, jump to the "WATTING"
 				{
