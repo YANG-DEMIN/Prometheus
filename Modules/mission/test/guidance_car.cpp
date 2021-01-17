@@ -263,14 +263,14 @@ void Guidance_Update(void)
 	//	yaw_target = yaw_target - 2 * M_PI;
 	//}
 	yaw_target = psi;
-	double yaw_control = -10 * (yaw_target - yaw_fcu) / 2 / M_PI;
-	Actuator_sp[0] = 0.8;				//throttle
-	Actuator_sp[1] = yaw_control;		//yaw
+	//double yaw_control = -10 * (yaw_target - yaw_fcu) / 2 / M_PI;
+	//Actuator_sp[0] = 0.8;				//throttle
+	//Actuator_sp[1] = yaw_control;		//yaw
 	cout << "psi = " << psi << endl;
 	cout << "yaw_fcu = " << yaw_fcu << endl;
 	cout << "yaw_target = " << yaw_target << endl;
-	cout << "yaw_control = " << yaw_control << endl;
-	//V_M << copysign(1.0, x_r) * VM * abs(cos(psi)), copysign(1.0, y_r) * VM * abs(sin(psi)), 0;
+	//cout << "yaw_control = " << yaw_control << endl;
+	V_M << VM * cos(psi), VM * sin(psi), 0;
 
 }
 
@@ -341,8 +341,8 @@ void FlyState_update(void)
 			{
 
 				//Guidance_Update();
-				//velocity_sp = V_M;
-				velocity_sp = {0.5,0.5,0};
+				velocity_sp = V_M;
+				//velocity_sp = {0.5,0.5,0};
 				//send_actuator_setpoint(Actuator_sp);
 				send_vel_setpoint(velocity_sp, yaw_target);
 				//cout << "I am here!!! " << endl;
@@ -403,9 +403,9 @@ int main(int argc, char **argv)
 		cout << "\t" << P_T[1] << "\t" << P_M[1] << endl;
 		cout << "\t" << P_T[2] << "\t" << P_M[2] << endl;
 
-		//cout << "vx = " << V_M[0] << endl;
-		//cout << "vy = " << V_M[1] << endl;
-		//cout << "vz = " << V_M[2] << endl;
+		cout << "vx = " << V_M[0] << endl;
+		cout << "vy = " << V_M[1] << endl;
+		cout << "vz = " << V_M[2] << endl;
 
 	}
 	return 0;
