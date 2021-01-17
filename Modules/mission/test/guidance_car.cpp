@@ -79,9 +79,11 @@ Eigen::Vector3d pos_drone;
 Eigen::Vector3d temp_pos_drone;	
 Eigen::Vector3d temp_pos_target;
 Eigen::Vector3d velocity_sp;
+Eigen::Vector2d Actuator_sp;
 
 mavros_msgs::SetMode mode_cmd;
 ros::Publisher setpoint_raw_local_pub;
+ros::Publisher actuator_setpoint_pub;
 ros::ServiceClient set_mode_client;
 
 enum
@@ -112,6 +114,7 @@ double q_lambda_delta = 0;
 double q_gamma_delta = 0;
 double delta_sita = 0.0;
 double delta_psi_v = 0.0;
+double yaw_target = 0.0;
 
 //receive the current position of drone from controller
 
@@ -171,13 +174,13 @@ void att_cb(const sensor_msgs::Imu::ConstPtr& msg)
       attitude_get = euler_fcu;
 		
 	att_rate_get[0] = msg->angular_velocity.x;
-      att_rate_get[1] = msg->angular_velocity.y;
-      att_rate_get[2] = msg->angular_velocity.z;
+    att_rate_get[1] = msg->angular_velocity.y;
+    att_rate_get[2] = msg->angular_velocity.z;
       
  }
 
 //send the desired position to controller (vx, vy, vz)
-void send_vel_setpoint(const Eigen::Vector3d& vel_sp)
+void send_vel_setpoint(const Eigen::Vector3d& vel_sp, double yaw_sp)
 {
 	mavros_msgs::PositionTarget pos_setpoint;
 	pos_setpoint.type_mask = 0b110111000111;	//0b 110 111 000 111  velocity
@@ -192,6 +195,7 @@ void send_vel_setpoint(const Eigen::Vector3d& vel_sp)
 	pos_setpoint.velocity.y = vel_sp[1];
 	pos_setpoint.velocity.z = vel_sp[2];
 
+	pos_setpoint.yaw = yaw_sp;
 
 	setpoint_raw_local_pub.publish(pos_setpoint);
 }
@@ -217,6 +221,32 @@ void send_pos_setpoint(const Eigen::Vector3d& pos_sp, float yaw_sp)
 	setpoint_raw_local_pub.publish(pos_setpoint);
 }
 
+
+// 【发布】底层控制量（Mx My Mz 及 F） [0][1][2][3]分别对应 roll pitch yaw控制量 及 油门推力 注意 这里是NED系的！！
+void send_actuator_setpoint(const Eigen::Vector2d& actuator_sp)
+{
+    mavros_msgs::ActuatorControl actuator_setpoint;
+
+    actuator_setpoint.group_mix = 0;
+    actuator_setpoint.controls[0] = 0.0;	
+    actuator_setpoint.controls[1] = 0.0;
+    actuator_setpoint.controls[2] = actuator_sp(1);		//偏航
+    actuator_setpoint.controls[3] = actuator_sp(0);		//油门
+    actuator_setpoint.controls[4] = 0.0;
+    actuator_setpoint.controls[5] = 0.0;
+    actuator_setpoint.controls[6] = 0.0;
+    actuator_setpoint.controls[7] = 0.0;
+
+    actuator_setpoint_pub.publish(actuator_setpoint);
+
+    // // 检查飞控是否收到控制量
+    // cout <<">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>command_to_mavros<<<<<<<<<<<<<<<<<<<<<<<<<<<" <<endl;
+    // //ned to enu
+    // cout << "actuator_target [0 1 2 3] : " << actuator_target.controls[0] << " [ ] "<< -actuator_target.controls[1] <<" [ ] "<<-actuator_target.controls[2]<<" [ ] "<<actuator_target.controls[3] <<" [ ] "<<endl;
+
+    // cout << "actuator_target [4 5 6 7] : " << actuator_target.controls[4] << " [ ] "<< actuator_target.controls[5] <<" [ ] "<<actuator_target.controls[6]<<" [ ] "<<actuator_target.controls[7] <<" [ ] "<<endl;
+
+}
 void Guidance_Update(void)
 {
 
@@ -225,9 +255,21 @@ void Guidance_Update(void)
 	y_r = P_r[1];
 	z_r = P_r[2];
 
-	psi = atan(y_r / x_r);			//because i can not use atan2 correctly
-
-	V_M << copysign(1.0, x_r) * VM * abs(cos(psi)), copysign(1.0, y_r) * VM * abs(sin(psi)), 0;
+	psi = atan2(y_r , x_r);			//psi is defined to the angle of T-M line and x axis(East orientation)
+	double yaw_fcu = attitude_get[2];		//实际偏航角
+	yaw_target = yaw_fcu + M_PI * 3 / 2;
+	if (yaw_target > 2 * M_PI)
+	{
+		yaw_target = yaw_target - 2 * M_PI;
+	}
+	double yaw_control = -1 * (yaw_target - yaw_fcu) / 2 / M_PI;
+	Actuator_sp[0] = 0.6;				//throttle
+	Actuator_sp[1] = yaw_control;		//yaw
+	cout << "psi = " << psi << endl;
+	cout << "yaw_fcu = " << yaw_fcu << endl;
+	cout << "yaw_target = " << yaw_target << endl;
+	cout << "yaw_control = " << yaw_control << endl;
+	//V_M << copysign(1.0, x_r) * VM * abs(cos(psi)), copysign(1.0, y_r) * VM * abs(sin(psi)), 0;
 
 }
 
@@ -297,10 +339,11 @@ void FlyState_update(void)
 		case FLY:
 			{
 
-				Guidance_Update();
-				velocity_sp = V_M;
-				//velocity_sp = {3,3,3};
-				send_vel_setpoint(velocity_sp);
+				//Guidance_Update();
+				//velocity_sp = V_M;
+				//velocity_sp = {0.5,0.5,0};
+				send_actuator_setpoint(Actuator_sp);
+				//send_vel_setpoint(velocity_sp, yaw_target);
 				//cout << "I am here!!! " << endl;
 				if(current_state.mode != "OFFBOARD")			//if it is switched to "onboard" mode, jump to the "WATTING"
 				{
@@ -338,6 +381,7 @@ int main(int argc, char **argv)
 	ros::Subscriber attitude_sub = nh.subscribe<sensor_msgs::Imu>("/mavros/imu/data", 10, att_cb);
 
 	setpoint_raw_local_pub = nh.advertise<mavros_msgs::PositionTarget>("/mavros/setpoint_raw/local", 10);
+	actuator_setpoint_pub = nh.advertise<mavros_msgs::ActuatorControl>("/mavros/actuator_control", 10);
 
 	set_mode_client = nh.serviceClient<mavros_msgs::SetMode>("/mavros/set_mode");			//little question
 		nh.param<float>("desire_z", desire_z, 10.0);
@@ -349,17 +393,18 @@ int main(int argc, char **argv)
 	{
 		
 		FlyState_update();
+		Guidance_Update();
 		ros::spinOnce();
 		rate.sleep();
 
 		cout << "P_T=" << "\t" << "\t" << "P_M="<< "\t"<< endl;
-		cout<< "\t" << P_T[0] << "\t" << P_M[0] << endl;
-		cout<< "\t" << P_T[1] << "\t" << P_M[1] << endl;
-		cout<< "\t" << P_T[2] << "\t" << P_M[2] << endl;
+		cout << "\t" << P_T[0] << "\t" << P_M[0] << endl;
+		cout << "\t" << P_T[1] << "\t" << P_M[1] << endl;
+		cout << "\t" << P_T[2] << "\t" << P_M[2] << endl;
 
-		cout << "vx = " << V_M[0] << endl;
-		cout << "vy = " << V_M[1] << endl;
-		cout << "vz = " << V_M[2] << endl;
+		//cout << "vx = " << V_M[0] << endl;
+		//cout << "vy = " << V_M[1] << endl;
+		//cout << "vz = " << V_M[2] << endl;
 
 	}
 	return 0;
