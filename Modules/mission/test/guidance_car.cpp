@@ -256,12 +256,13 @@ void Guidance_Update(void)
 	z_r = P_r[2];
 
 	psi = atan2(y_r , x_r);			//psi is defined to the angle of T-M line and x axis(East orientation)
-	double yaw_fcu = attitude_get[2];		//实际偏航角
-	yaw_target = yaw_fcu + M_PI * 3 / 2;
-	if (yaw_target > 2 * M_PI)
-	{
-		yaw_target = yaw_target - 2 * M_PI;
-	}
+	double yaw_fcu = attitude_get[2];		//实际偏航角 东北天坐标系 【-pi - pi】
+	//yaw_target = psi + M_PI * 3 / 2;
+	//if (yaw_target > 2 * M_PI)
+	//{
+	//	yaw_target = yaw_target - 2 * M_PI;
+	//}
+	yaw_target = psi;
 	double yaw_control = -1 * (yaw_target - yaw_fcu) / 2 / M_PI;
 	Actuator_sp[0] = 0.6;				//throttle
 	Actuator_sp[1] = yaw_control;		//yaw
