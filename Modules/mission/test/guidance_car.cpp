@@ -228,7 +228,7 @@ void send_actuator_setpoint(const Eigen::Vector2d& actuator_sp)
     mavros_msgs::ActuatorControl actuator_setpoint;
 
     actuator_setpoint.group_mix = 0;
-    actuator_setpoint.controls[0] = 0.0;	
+    actuator_setpoint.controls[0] = 0.0;
     actuator_setpoint.controls[1] = 0.0;
     actuator_setpoint.controls[2] = actuator_sp(1);		//偏航
     actuator_setpoint.controls[3] = actuator_sp(0);		//油门
@@ -263,7 +263,7 @@ void Guidance_Update(void)
 	//	yaw_target = yaw_target - 2 * M_PI;
 	//}
 	yaw_target = psi;
-	double yaw_control = 10 * (yaw_target - yaw_fcu) / 2 / M_PI;
+	double yaw_control = -10 * (yaw_target - yaw_fcu) / 2 / M_PI;
 	Actuator_sp[0] = 0.8;				//throttle
 	Actuator_sp[1] = yaw_control;		//yaw
 	cout << "psi = " << psi << endl;
@@ -342,9 +342,9 @@ void FlyState_update(void)
 
 				//Guidance_Update();
 				//velocity_sp = V_M;
-				//velocity_sp = {0.5,0.5,0};
-				send_actuator_setpoint(Actuator_sp);
-				//send_vel_setpoint(velocity_sp, yaw_target);
+				velocity_sp = {0.5,0.5,0};
+				//send_actuator_setpoint(Actuator_sp);
+				send_vel_setpoint(velocity_sp, yaw_target);
 				//cout << "I am here!!! " << endl;
 				if(current_state.mode != "OFFBOARD")			//if it is switched to "onboard" mode, jump to the "WATTING"
 				{
