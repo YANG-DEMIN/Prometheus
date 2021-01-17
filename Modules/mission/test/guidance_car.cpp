@@ -263,8 +263,8 @@ void Guidance_Update(void)
 	//	yaw_target = yaw_target - 2 * M_PI;
 	//}
 	yaw_target = psi;
-	double yaw_control = -1 * (yaw_target - yaw_fcu) / 2 / M_PI;
-	Actuator_sp[0] = 0.6;				//throttle
+	double yaw_control = 10 * (yaw_target - yaw_fcu) / 2 / M_PI;
+	Actuator_sp[0] = 0.8;				//throttle
 	Actuator_sp[1] = yaw_control;		//yaw
 	cout << "psi = " << psi << endl;
 	cout << "yaw_fcu = " << yaw_fcu << endl;
