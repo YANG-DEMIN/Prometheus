@@ -195,7 +195,7 @@ void send_vel_setpoint(const Eigen::Vector3d& vel_sp)
 	pos_setpoint.velocity.y = vel_sp[1];
 	pos_setpoint.velocity.z = vel_sp[2];
 
-	//pos_setpoint.yaw = yaw_sp;
+	pos_setpoint.yaw = yaw_target;
 
 	setpoint_raw_local_pub.publish(pos_setpoint);
 }
@@ -341,8 +341,8 @@ void FlyState_update(void)
 			{
 
 				//Guidance_Update();
-				velocity_sp = V_M;
-				//velocity_sp = {0.5,0.5,0};
+				//velocity_sp = V_M;
+				velocity_sp = {0.4,0.4,0};
 				//send_actuator_setpoint(Actuator_sp);
 				send_vel_setpoint(velocity_sp);
 				//cout << "I am here!!! " << endl;
