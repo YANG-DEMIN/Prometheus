@@ -72,6 +72,13 @@
         </include>
     </group>
 
+
+    <node pkg="prometheus_mission" type="target_uav1" name="target_uav1" output="screen" launch-prefix="gnome-terminal --">
+    </node>
+
+    <node pkg="prometheus_mission" type="guidance_sitl" name="guidance" output="screen" launch-prefix="gnome-terminal --">
+    </node>
+
 </launch>
 <!-- to add more UAVs (up to 10):
 Increase the id

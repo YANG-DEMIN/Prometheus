@@ -150,6 +150,10 @@ add_executable(circular_car test/circular_car.cpp)
 add_dependencies(circular_car prometheus_mission_gencpp)
 target_link_libraries(circular_car ${catkin_LIBRARIES})
 
+add_executable(car_point test/car_point.cpp)
+add_dependencies(car_point prometheus_mission_gencpp)
+target_link_libraries(car_point ${catkin_LIBRARIES})
+
 
 #############
 ## Install ##
