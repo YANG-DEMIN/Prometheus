@@ -19,8 +19,8 @@ from multiprocessing import Process
 import sys
 
 move_type = 1
-motion_type = 0     #位置控制
-motion_type = 1     #速度控制
+#motion_type = 0     #位置控制
+motion_type = 0     #速度控制
 
 
 def pose_publisher_line():
@@ -32,16 +32,16 @@ def pose_publisher_line():
     time = 0.0
     while not rospy.is_shutdown():
 
-        pose_msg.header.stamp = rospy.Time.now()
-        pose_msg.header.frame_id = "home"
+        #pose_msg.header.stamp = rospy.Time.now()
+        #pose_msg.header.frame_id = "home"
         pose_msg.coordinate_frame = 1
 
-        pose_msg.position.x = 0.0
-        pose_msg.position.y = 0.0
+        pose_msg.position.x = 2.0
+        pose_msg.position.y = 2.0
         pose_msg.position.z = 0.0
 
-        pose_msg.velocity.x = 0.0
-        pose_msg.velocity.y = 0.0
+        pose_msg.velocity.x = 0.2
+        pose_msg.velocity.y = 0.2
         pose_msg.velocity.z = 0.0
 
         pose_msg.yaw = 0.0
@@ -50,6 +50,7 @@ def pose_publisher_line():
         if(motion_type == 0):
             pose_msg.type_mask = PositionTarget.IGNORE_VX + PositionTarget.IGNORE_VY + PositionTarget.IGNORE_VZ \
                 + PositionTarget.IGNORE_AFX + PositionTarget.IGNORE_AFY + PositionTarget.IGNORE_AFZ + PositionTarget.IGNORE_YAW_RATE
+            pose_msg.type_mask = 504
             print('Pos_x :',pose_msg.position.x)
             print('Pos_y :',pose_msg.position.y)
             print('Pos_z :',pose_msg.position.z)

@@ -179,6 +179,9 @@ void FlyState_update(void)
 				{
 					FlyState = FLYOVER;
 				}
+				//pos_target[0] = 2;
+				//pos_target[1] = 4;
+				//pos_target[2] = temp_pos_drone[2];
 				pos_target[0] = temp_pos_drone[0] + desire_Radius * cos(Omega + phase);
 				pos_target[1] = temp_pos_drone[1] + desire_Radius * sin(Omega + phase);
 				pos_target[2] = temp_pos_drone[2];
