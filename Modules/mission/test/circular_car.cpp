@@ -122,7 +122,7 @@ void FlyState_update(void)
 			if(pos_drone[0] == 0 && pos_drone[1] == 0)	//no position information, land
 			{
 				cout << "Check error, make sure have local location" <<endl;
-				mode_cmd.request.custom_mode = "AUTO.LAND";
+				mode_cmd.request.custom_mode = "MANUAL";
 				set_mode_client.call(mode_cmd);
 				FlyState = WATTING;
 			}
@@ -137,14 +137,14 @@ void FlyState_update(void)
 			temp_pos_target[0] = temp_pos_drone[0] - desire_Radius;
 			temp_pos_target[1] = temp_pos_drone[1];
 			temp_pos_target[2] = temp_pos_drone[2];
-			MoveTimeCnt += 2;
-			if(MoveTimeCnt >= 100)
+			MoveTimeCnt += 1;
+			if(MoveTimeCnt >= 200)
 			{
 				FlyState = REST;
 				MoveTimeCnt = 0;
 			}
-			pos_target[0] = temp_pos_drone[0] + (temp_pos_target[0] - temp_pos_drone[0]) * (MoveTimeCnt/100);
-			pos_target[1] = temp_pos_drone[1] + (temp_pos_target[1] - temp_pos_drone[1]) * (MoveTimeCnt/100);
+			pos_target[0] = temp_pos_drone[0] + (temp_pos_target[0] - temp_pos_drone[0]) * (MoveTimeCnt/200);
+			pos_target[1] = temp_pos_drone[1] + (temp_pos_target[1] - temp_pos_drone[1]) * (MoveTimeCnt/200);
 			pos_target[2] = temp_pos_drone[2];
 			send_pos_setpoint(pos_target, 0);
 			if(current_state.mode != "OFFBOARD")			//if it is switched to "onboard" mode, jump to the "WATTING"
@@ -174,7 +174,7 @@ void FlyState_update(void)
 			{
 				float phase = 3.1415926;
 				float Omega = 2.0 * 3.14159 * MoveTimeCnt / priod;  //0~2pi
-				MoveTimeCnt += 3;
+				MoveTimeCnt += 2;
 				if(MoveTimeCnt >= priod)
 				{
 					FlyState = FLYOVER;
@@ -195,7 +195,7 @@ void FlyState_update(void)
 			break;
 		case FLYOVER:
 			{
-				mode_cmd.request.custom_mode = "AUTO.LAND";
+				mode_cmd.request.custom_mode = "MANUAL";
 				set_mode_client.call(mode_cmd);
 				FlyState = WATTING;
 			}

@@ -92,7 +92,7 @@ void send_pos_setpoint(const Eigen::Vector3d& pos_sp, float yaw_sp)
 }
 
 void FlyState_update(void)
-{
+{ 
 	switch(FlyState)
 	{
 		case WATTING:

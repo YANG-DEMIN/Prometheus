@@ -38,13 +38,13 @@ def pose_publisher_line():
 
         pose_msg.position.x = 2.0
         pose_msg.position.y = 2.0
-        pose_msg.position.z = 10.0
+        pose_msg.position.z = 0.0
 
         pose_msg.velocity.x = 0.2
         pose_msg.velocity.y = 0.2
         pose_msg.velocity.z = 0.0
 
-        pose_msg.yaw = 1.0
+        pose_msg.yaw = 0.0
         pose_msg.yaw_rate = 0.0
 
         if(motion_type == 0):
