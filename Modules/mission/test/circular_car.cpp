@@ -220,7 +220,7 @@ int main(int argc, char **argv)
 
 	set_mode_client = nh.serviceClient<mavros_msgs::SetMode>("/mavros/set_mode");			//little question
 		nh.param<float>("desire_z", desire_z, 0.0);
-		nh.param<float>("desire_Radius", desire_Radius, 20);
+		nh.param<float>("desire_Radius", desire_Radius, 2);			//此处决定了转弯的半径！！！
 
 	cout << "circular node started!!!" << endl; 
 
@@ -229,6 +229,7 @@ int main(int argc, char **argv)
 		FlyState_update();
 		ros::spinOnce();
 		rate.sleep();
+		cout << desire_Radius << endl;
 
 	}
 	return 0;
