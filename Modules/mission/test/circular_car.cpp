@@ -229,7 +229,7 @@ int main(int argc, char **argv)
 		FlyState_update();
 		ros::spinOnce();
 		rate.sleep();
-		cout << desire_Radius << endl;
+		//cout << desire_Radius << endl;
 
 	}
 	return 0;
