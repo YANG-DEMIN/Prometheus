@@ -32,8 +32,8 @@
 
 using namespace std;
 
-float desire_z = 10.0;				//desired altitude
-float desire_Radius = 10.0;		//desired radius of circle
+float desire_z = 15.0;				//desired altitude
+float desire_Radius = 5.0;		//desired radius of circle
 float MoveTimeCnt = 0.0;
 float priod = 2000.0;			//to change velocity of flying using it
 
@@ -216,8 +216,8 @@ int main(int argc, char **argv)
 	setpoint_raw_local_pub = nh.advertise<mavros_msgs::PositionTarget>("/mavros/setpoint_raw/local", 10);
 
 	set_mode_client = nh.serviceClient<mavros_msgs::SetMode>("/mavros/set_mode");			//little question
-		nh.param<float>("desire_z", desire_z, 10.0);
-		nh.param<float>("desire_Radius", desire_Radius, 10.0);
+		nh.param<float>("desire_z", desire_z, 15.0);
+		nh.param<float>("desire_Radius", desire_Radius, 5.0);
 
 	cout << "circular node started!!!" << endl; 
 
