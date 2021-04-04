@@ -154,6 +154,10 @@ add_executable(car_point test/car_point.cpp)
 add_dependencies(car_point prometheus_mission_gencpp)
 target_link_libraries(car_point ${catkin_LIBRARIES})
 
+add_executable(guidance_fake_target test/guidance_fake_target.cpp)
+add_dependencies(guidance_fake_target prometheus_mission_gencpp)
+target_link_libraries(guidance_fake_target ${catkin_LIBRARIES})
+
 
 #############
 ## Install ##

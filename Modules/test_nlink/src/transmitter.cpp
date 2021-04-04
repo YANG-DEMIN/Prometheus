@@ -19,9 +19,13 @@
 #include <iostream>
 #include <std_msgs/String.h>
 
+#define LAT_START 22.5180977 //A0维度
+#define LONG_START 113.9007239 //A0经度
+#define LSB_M_TO_LAT_LONG 8.993216059e-6 //meter2lat_lon
 
 int target_id, uav_id;
 float target_pos[3], uav_pos[3];
+float local_pos[3], global_pos[3];
 
 //UWB Anchor callback function
 void Anchorframe0Callback(const nlink_parser::LinktrackAnchorframe0::ConstPtr &msg) {
@@ -45,6 +49,9 @@ void Anchorframe0Callback(const nlink_parser::LinktrackAnchorframe0::ConstPtr &m
     }
 
   }
+
+
+
   printf("SystemTime: %d\n", msg->system_time);
   printf("UAV:\n");
   printf("\tID: %d\n", uav_id);
@@ -60,6 +67,21 @@ void Anchorframe0Callback(const nlink_parser::LinktrackAnchorframe0::ConstPtr &m
   printf("\t\ty: %f\n", target_pos[1]);
   printf("\t\tz: %f\n", target_pos[2]);
 }
+
+// //local_pos-->uwb坐标系东北天
+// //global_pos-->全球坐标系
+// float *local2global(float Local_Pos[3])
+// {
+    
+//     //维度->北
+//   global_pos[0] = (Local_Pos[1] * LSB_M_TO_LAT_LONG + LAT_START) * 10e7;
+//     //经度
+//   global_pos[1] = (Local_Pos[0] * LSB_M_TO_LAT_LONG + LONG_START) * 10e7;
+//     //高度
+//   global_pos[2] = (Local_Pos[2]) * 10e3;
+  
+//   return global_pos;
+// }
 
 std_msgs::String str;
 int main(int argc, char **argv) {

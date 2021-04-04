@@ -129,6 +129,9 @@ void target_cb(const geometry_msgs::PoseStamped::ConstPtr &msg)
 	Eigen::Vector3d pos_target_fcu_enu(msg->pose.position.x, msg->pose.position.y, msg->pose.position.z);
 
 	P_T = pos_target_fcu_enu;
+	P_T[0] = -15;
+	P_T[1] = -15;
+	P_T[2] = 15;
 }
 
 void Guidance_Update(void)
@@ -136,7 +139,9 @@ void Guidance_Update(void)
 	//update the position
 	P_M = position_get;
 	//cout << "P_M = position_get = " << P_M <<endl; 		//yes, i get the right position
-	P_T= P_T;
+	P_T[0] = -15;
+	P_T[1] = -15;
+	P_T[2] = 15;
 	
 	//update the attitude
 	phi = attitude_get[0];
@@ -315,8 +320,7 @@ void FlyState_update(void)
 			send_pos_setpoint(pos_target, 0);
 			MoveTimeCnt += 1;
 			
-			if(MoveTimeCnt >= 100 && abs(P_T[0] - desire_target_x) < 3 && abs(P_T[1] - desire_target_y) < 3 
-				&& abs(P_T[2] - desire_target_z) < 3)
+			if(MoveTimeCnt >= 100)
 			{
 				MoveTimeCnt = 0;
 				FlyState = FLY;
@@ -365,13 +369,13 @@ int main(int argc, char **argv)
 	ros::NodeHandle nh;
 	
    	ros::Subscriber target_sub = nh.subscribe<geometry_msgs::PoseStamped>("/uav1/mavros/local_position/pose", 100, target_cb);	
-	ros::Subscriber state_sub = nh.subscribe<mavros_msgs::State>("/uav0/mavros/state", 10, state_cb);			//handle return function	
-    ros::Subscriber position_sub = nh.subscribe<geometry_msgs::PoseStamped>("/uav0/mavros/local_position/pose", 100, pos_cb);
-	ros::Subscriber attitude_sub = nh.subscribe<sensor_msgs::Imu>("/uav0/mavros/imu/data", 10, att_cb);
+	ros::Subscriber state_sub = nh.subscribe<mavros_msgs::State>("/mavros/state", 10, state_cb);			//handle return function	
+    ros::Subscriber position_sub = nh.subscribe<geometry_msgs::PoseStamped>("/mavros/local_position/pose", 100, pos_cb);
+	ros::Subscriber attitude_sub = nh.subscribe<sensor_msgs::Imu>("/mavros/imu/data", 10, att_cb);
 
-	setpoint_raw_local_pub = nh.advertise<mavros_msgs::PositionTarget>("/uav0/mavros/setpoint_raw/local", 10);
+	setpoint_raw_local_pub = nh.advertise<mavros_msgs::PositionTarget>("/mavros/setpoint_raw/local", 10);
 
-	set_mode_client = nh.serviceClient<mavros_msgs::SetMode>("/uav0/mavros/set_mode");			//little question
+	set_mode_client = nh.serviceClient<mavros_msgs::SetMode>("/mavros/set_mode");			//little question
 
 	cout << "guidance node started!!!" << endl; 
 	ros::Rate rate(20.0);
