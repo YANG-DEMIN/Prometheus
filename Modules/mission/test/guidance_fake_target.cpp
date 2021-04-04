@@ -129,8 +129,8 @@ void target_cb(const geometry_msgs::PoseStamped::ConstPtr &msg)
 	Eigen::Vector3d pos_target_fcu_enu(msg->pose.position.x, msg->pose.position.y, msg->pose.position.z);
 
 	P_T = pos_target_fcu_enu;
-	P_T[0] = -15;
-	P_T[1] = -15;
+	P_T[0] = 15;
+	P_T[1] = 15;
 	P_T[2] = 15;
 }
 
@@ -139,8 +139,8 @@ void Guidance_Update(void)
 	//update the position
 	P_M = position_get;
 	//cout << "P_M = position_get = " << P_M <<endl; 		//yes, i get the right position
-	P_T[0] = -15;
-	P_T[1] = -15;
+	P_T[0] = 15;
+	P_T[1] = 15;
 	P_T[2] = 15;
 	
 	//update the attitude
