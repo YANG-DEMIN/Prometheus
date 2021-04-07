@@ -158,7 +158,13 @@ add_executable(guidance_fake_target test/guidance_fake_target.cpp)
 add_dependencies(guidance_fake_target prometheus_mission_gencpp)
 target_link_libraries(guidance_fake_target ${catkin_LIBRARIES})
 
+add_executable(uwb_attack_fix test/uwb_attack_fix.cpp)
+add_dependencies(uwb_attack_fix prometheus_mission_gencpp)
+target_link_libraries(uwb_attack_fix ${catkin_LIBRARIES})
 
+add_executable(uwb_attack_move test/uwb_attack_move.cpp)
+add_dependencies(uwb_attack_move prometheus_mission_gencpp)
+target_link_libraries(uwb_attack_move ${catkin_LIBRARIES})
 #############
 ## Install ##
 #############

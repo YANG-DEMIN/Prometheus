@@ -5,7 +5,7 @@
  *
  * Update Time: 2020.8.14
  *
- * descripation: demostration of circular flying using mavros
+ * descripation: demostration of proportion guidance on sitl model
  *      1.
  *      2.
  *      3.
@@ -14,7 +14,6 @@
 #include <ros/ros.h>
 #include <fstream>
 #include <math.h>
-#include <cmath>
 #include <string>
 #include <time.h>
 #include <queue>
@@ -23,12 +22,10 @@
 #include <stdlib.h>
 #include <iostream>
 #include <stdio.h>
-#include <iostream>
 #include <math_utils.h>
 #include <Eigen/Eigen>
 
 #include <std_msgs/Bool.h>
-#include <std_msgs/String.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/TwistStamped.h>
 #include <sensor_msgs/Imu.h>
@@ -45,18 +42,24 @@
 
 using namespace std;
 
-float desire_z = 10.0;				//desired altitude
+float desire_x = 0.0;				//desired altitude
+float desire_y = 0.0;				//desired altitude
+float desire_z = 5.0;				//desired altitude
+float desire_target_x = 200.0;				//desired altitude
+float desire_target_y = 100.0;				//desired altitude
+float desire_target_z = 50.0;				//desired altitude
+
 float desire_Radius = 10.0;		//desired radius of circle
 float MoveTimeCnt = 0.0;
 float priod = 2000.0;			//to change velocity of flying using it
 
-float DESIRE_V = 10;
+//float DESIRE_V = 10;
 
 Eigen::Vector3d P_T0 = {200, 100, 50};		//initial position of Target
 Eigen::Vector3d P_M0 = {0, 0, 5};			//initial position of Missile
 Eigen::Vector3d V_T = {-3, 0, 0};			//velocity of Target
 Eigen::Vector3d V_M = {0, 0, 0};
-float VM = 1;						//velocity of Missile
+float VM = 5;						//velocity of Missile
 
 float K1 = 4;						//proportion of guidance
 float K2 = 4;
@@ -79,11 +82,9 @@ Eigen::Vector3d pos_drone;
 Eigen::Vector3d temp_pos_drone;	
 Eigen::Vector3d temp_pos_target;
 Eigen::Vector3d velocity_sp;
-Eigen::Vector2d Actuator_sp;
 
 mavros_msgs::SetMode mode_cmd;
 ros::Publisher setpoint_raw_local_pub;
-ros::Publisher actuator_setpoint_pub;
 ros::ServiceClient set_mode_client;
 
 enum
@@ -114,7 +115,6 @@ double q_lambda_delta = 0;
 double q_gamma_delta = 0;
 double delta_sita = 0.0;
 double delta_psi_v = 0.0;
-double yaw_target = 0.0;
 
 //receive the current position of drone from controller
 
@@ -123,29 +123,75 @@ void state_cb(const mavros_msgs::State::ConstPtr& msg)
 	current_state = *msg;
 }
 
-float str2float(string str)
+void target_cb(const geometry_msgs::PoseStamped::ConstPtr &msg)
 {
-  float result;
-  stringstream stream(str);
-  stream >> result;
-  return result;
+	//read the drone postion from the Mavros Package [Frame: ENU]
+	Eigen::Vector3d pos_target_fcu_enu(msg->pose.position.x, msg->pose.position.y, msg->pose.position.z);
+
+	P_T = pos_target_fcu_enu;
+	P_T[0] = 15;
+	P_T[1] = 15;
+	P_T[2] = 15;
 }
 
-void target_cb(const std_msgs::String::ConstPtr& msg)
+void Guidance_Update(void)
 {
-  int num = msg->data.size();
-  P_T[0] = str2float(msg->data.substr(8,15));
-  P_T[1] = str2float(msg->data.substr(18,25));
-  P_T[2] = str2float(msg->data.substr(28,35));
+	//update the position
+	P_M = position_get;
+	//cout << "P_M = position_get = " << P_M <<endl; 		//yes, i get the right position
+	P_T[0] = 15;
+	P_T[1] = 15;
+	P_T[2] = 15;
+	
+	//update the attitude
+	phi = attitude_get[0];
+	gamma_vehicle = attitude_get[1];
+	psi = attitude_get[2];
 
-  P_M[0] = str2float(msg->data.substr(43,50));
-  P_M[1] = str2float(msg->data.substr(53,60));
-  P_M[2] = str2float(msg->data.substr(63,70));
-  //东北天坐标系
-  //printf("the size of string is %d\n",num);
-  //printf("%f\n", P_M[0]);
-  //printf("%f\n", P_M[1]);
-  //printf("%f\n", P_M[2]);
+	L << cos(phi) * cos(psi), -sin(phi) * cos(psi) * cos(gamma_vehicle) + sin(psi) * sin(gamma_vehicle), sin(phi) * cos(psi) * sin(gamma_vehicle) + sin(psi) * cos(gamma_vehicle),
+    sin(phi), cos(phi) * cos(gamma_vehicle), -cos(phi) * sin(gamma_vehicle),
+    -cos(phi) * sin(psi), sin(phi) * sin(psi) * cos(gamma_vehicle) + cos(psi) * sin(gamma_vehicle), -sin(phi) * sin(psi) * sin(gamma_vehicle) + cos(psi) * cos(gamma_vehicle);
+	double L11 = L(0, 0);
+	double L12 = L(0, 1);
+	double L13 = L(0, 2);
+	double L21 = L(1, 0);
+	double L22 = L(1, 1);
+	double L23 = L(1, 2);
+	double L31 = L(2, 0);
+	double L32 = L(2, 1);
+	double L33 = L(2, 2);
+
+	x_r_last = x_r;		//Because the feather of atan function 
+	y_r_last = y_r;
+	z_r_last = z_r;
+
+	P_r = P_T - P_M;
+	x_r = P_r[0];
+	y_r = P_r[1];
+	z_r = P_r[2];
+
+	q_lambda = atan(y_r /x_r);
+   	q_gamma = - atan(z_r/sqrt(x_r * x_r + y_r * y_r));
+    q_lambda_last = atan(y_r_last/x_r_last);
+    q_gamma_last = - atan(z_r_last/sqrt(x_r_last * x_r_last + y_r_last * y_r_last));
+    q_lambda_delta = q_lambda - q_lambda_last;
+   	q_gamma_delta = q_gamma - q_gamma_last;
+	
+	delta_sita = K1 * q_gamma_delta;
+    delta_psi_v = K2 * q_lambda_delta;
+	if (delta_sita > 1 || delta_psi_v > 1)
+	{
+		delta_psi_v = 0;
+		delta_sita = 0;
+	}
+	//cout << "I come in, and now psi_v = " << psi_v  << " sita = " << sita << endl;	
+	sita = sita + delta_sita;
+   	psi_v = psi_v + delta_psi_v;
+	//cout << "I come out, and now psi_v = " << psi_v  << " sita = " << sita << endl;
+	
+	//cout << "psi_v = " << psi_v << endl;
+	V_M << VM * cos(sita) * cos(psi_v), VM * cos(sita) * sin(psi_v), VM * sin(- sita);
+
 }
 
 void pos_cb(const geometry_msgs::PoseStamped::ConstPtr &msg)
@@ -154,7 +200,8 @@ void pos_cb(const geometry_msgs::PoseStamped::ConstPtr &msg)
 	Eigen::Vector3d pos_drone_fcu_enu(msg->pose.position.x, msg->pose.position.y, msg->pose.position.z);
 
 	pos_drone = pos_drone_fcu_enu;
-
+	position_get = pos_drone;
+	P_M = position_get;
 }
 
 void vel_cb(const geometry_msgs::TwistStamped::ConstPtr &msg)
@@ -174,16 +221,16 @@ void att_cb(const sensor_msgs::Imu::ConstPtr& msg)
       attitude_get = euler_fcu;
 		
 	att_rate_get[0] = msg->angular_velocity.x;
-    att_rate_get[1] = msg->angular_velocity.y;
-    att_rate_get[2] = msg->angular_velocity.z;
+      att_rate_get[1] = msg->angular_velocity.y;
+      att_rate_get[2] = msg->angular_velocity.z;
       
  }
 
-//send the desired position to controller (vx, vy, vz)
+//send the desired position to controller (xyz, yaw)
 void send_vel_setpoint(const Eigen::Vector3d& vel_sp)
 {
 	mavros_msgs::PositionTarget pos_setpoint;
-	pos_setpoint.type_mask = 0b110111000111;	//0b 110 111 000 111  velocity
+	pos_setpoint.type_mask = 0b110111000111;	//0b 100 111 000 111  velocity
 
 	//Bitmask to indicate which dimensions should be ignored (1 means ignore, 0 means not ignore; Bit 10 must set to 0)
 	//Bit 1:x, bit 2:y, bit 3:z, bit 4:vx, bit 5:vy, bit 6:vz, bit 7: ax, bit 8:ay, bit 9:az, bit 10:is_force_sp, bit 11: yaw, bit 12:yaw_rate
@@ -195,7 +242,6 @@ void send_vel_setpoint(const Eigen::Vector3d& vel_sp)
 	pos_setpoint.velocity.y = vel_sp[1];
 	pos_setpoint.velocity.z = vel_sp[2];
 
-	pos_setpoint.yaw = yaw_target;
 
 	setpoint_raw_local_pub.publish(pos_setpoint);
 }
@@ -219,59 +265,6 @@ void send_pos_setpoint(const Eigen::Vector3d& pos_sp, float yaw_sp)
 	pos_setpoint.yaw = yaw_sp;
 
 	setpoint_raw_local_pub.publish(pos_setpoint);
-}
-
-
-// 【发布】底层控制量（Mx My Mz 及 F） [0][1][2][3]分别对应 roll pitch yaw控制量 及 油门推力 注意 这里是NED系的！！
-void send_actuator_setpoint(const Eigen::Vector2d& actuator_sp)
-{
-    mavros_msgs::ActuatorControl actuator_setpoint;
-
-    actuator_setpoint.group_mix = 0;
-    actuator_setpoint.controls[0] = 0.0;
-    actuator_setpoint.controls[1] = 0.0;
-    actuator_setpoint.controls[2] = actuator_sp(1);		//偏航
-    actuator_setpoint.controls[3] = actuator_sp(0);		//油门
-    actuator_setpoint.controls[4] = 0.0;
-    actuator_setpoint.controls[5] = 0.0;
-    actuator_setpoint.controls[6] = 0.0;
-    actuator_setpoint.controls[7] = 0.0;
-
-    actuator_setpoint_pub.publish(actuator_setpoint);
-
-    // // 检查飞控是否收到控制量
-    // cout <<">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>command_to_mavros<<<<<<<<<<<<<<<<<<<<<<<<<<<" <<endl;
-    // //ned to enu
-    // cout << "actuator_target [0 1 2 3] : " << actuator_target.controls[0] << " [ ] "<< -actuator_target.controls[1] <<" [ ] "<<-actuator_target.controls[2]<<" [ ] "<<actuator_target.controls[3] <<" [ ] "<<endl;
-
-    // cout << "actuator_target [4 5 6 7] : " << actuator_target.controls[4] << " [ ] "<< actuator_target.controls[5] <<" [ ] "<<actuator_target.controls[6]<<" [ ] "<<actuator_target.controls[7] <<" [ ] "<<endl;
-
-}
-void Guidance_Update(void)
-{
-
-	P_r = P_T - P_M;
-	x_r = P_r[0];
-	y_r = P_r[1];
-	z_r = P_r[2];
-
-	psi = atan2(y_r , x_r);			//psi is defined to the angle of T-M line and x axis(East orientation)
-	double yaw_fcu = attitude_get[2];		//实际偏航角 东北天坐标系 【-pi - pi】
-	//yaw_target = psi + M_PI * 3 / 2;
-	//if (yaw_target > 2 * M_PI)
-	//{
-	//	yaw_target = yaw_target - 2 * M_PI;
-	//}
-	yaw_target = psi;
-	//double yaw_control = -10 * (yaw_target - yaw_fcu) / 2 / M_PI;
-	//Actuator_sp[0] = 0.8;				//throttle
-	//Actuator_sp[1] = yaw_control;		//yaw
-	cout << "psi = " << psi << endl;
-	cout << "yaw_fcu = " << yaw_fcu << endl;
-	cout << "yaw_target = " << yaw_target << endl;
-	//cout << "yaw_control = " << yaw_control << endl;
-	V_M << VM * cos(psi), VM * sin(psi), 0;
-
 }
 
 void FlyState_update(void)
@@ -321,11 +314,12 @@ void FlyState_update(void)
 			//cout << "PREPARE" << endl;
 			break;
 		case REST:
-			pos_target[0] = pos_drone[0];				//fly to 10 m
-			pos_target[1] = pos_drone[1];
+			pos_target[0] = desire_x;				//fly to 10 m
+			pos_target[1] = desire_y;
 			pos_target[2] = desire_z;
 			send_pos_setpoint(pos_target, 0);
 			MoveTimeCnt += 1;
+			
 			if(MoveTimeCnt >= 100)
 			{
 				MoveTimeCnt = 0;
@@ -335,22 +329,20 @@ void FlyState_update(void)
 			{
 				FlyState = WATTING;
 			}
-			//cout << "REST" << endl;
+			cout << "REST" << endl;
 			break;
 		case FLY:
 			{
 
-				//Guidance_Update();
-				//velocity_sp = V_M;
-				velocity_sp = {0.4,0.4,0};
-				//send_actuator_setpoint(Actuator_sp);
+				Guidance_Update();
+				velocity_sp = V_M;
 				send_vel_setpoint(velocity_sp);
 				//cout << "I am here!!! " << endl;
 				if(current_state.mode != "OFFBOARD")			//if it is switched to "onboard" mode, jump to the "WATTING"
 				{
 					FlyState = WATTING;
 				}
-				if(abs(P_r[0]*P_r[0] + P_r[1]*P_r[1] + P_r[2]*P_r[2]) < 0.5)
+				if(abs(P_r[0]*P_r[0] + P_r[1]*P_r[1] + P_r[2]*P_r[2]) < 2)
 				{
 					cout << "I hit it !!!" << endl;
 					FlyState = FLYOVER;
@@ -376,17 +368,14 @@ int main(int argc, char **argv)
 	ros::init(argc, argv, "circular_offboard");
 	ros::NodeHandle nh;
 	
-   	ros::Subscriber target_sub = nh.subscribe<std_msgs::String>("/nlink_linktrack_data_transmission", 100, target_cb);	
+   	ros::Subscriber target_sub = nh.subscribe<geometry_msgs::PoseStamped>("/uav1/mavros/local_position/pose", 100, target_cb);	
 	ros::Subscriber state_sub = nh.subscribe<mavros_msgs::State>("/mavros/state", 10, state_cb);			//handle return function	
     ros::Subscriber position_sub = nh.subscribe<geometry_msgs::PoseStamped>("/mavros/local_position/pose", 100, pos_cb);
 	ros::Subscriber attitude_sub = nh.subscribe<sensor_msgs::Imu>("/mavros/imu/data", 10, att_cb);
 
 	setpoint_raw_local_pub = nh.advertise<mavros_msgs::PositionTarget>("/mavros/setpoint_raw/local", 10);
-	actuator_setpoint_pub = nh.advertise<mavros_msgs::ActuatorControl>("/mavros/actuator_control", 10);
 
 	set_mode_client = nh.serviceClient<mavros_msgs::SetMode>("/mavros/set_mode");			//little question
-		nh.param<float>("desire_z", desire_z, 10.0);
-		nh.param<float>("desire_Radius", desire_Radius, 10.0);
 
 	cout << "guidance node started!!!" << endl; 
 	ros::Rate rate(20.0);
@@ -394,18 +383,17 @@ int main(int argc, char **argv)
 	{
 		
 		FlyState_update();
-		Guidance_Update();
 		ros::spinOnce();
 		rate.sleep();
 
 		cout << "P_T=" << "\t" << "\t" << "P_M="<< "\t"<< endl;
-		cout << "\t" << P_T[0] << "\t" << P_M[0] << endl;
-		cout << "\t" << P_T[1] << "\t" << P_M[1] << endl;
-		cout << "\t" << P_T[2] << "\t" << P_M[2] << endl;
+		cout<< "\t" << P_T[0] << "\t" << P_M[0] << endl;
+		cout<< "\t" << P_T[1] << "\t" << P_M[1] << endl;
+		cout<< "\t" << P_T[2] << "\t" << P_M[2] << endl;
 
-		cout << "vx = " << V_M[0] << endl;
-		cout << "vy = " << V_M[1] << endl;
-		cout << "vz = " << V_M[2] << endl;
+		//cout << "sita = " << sita << endl;
+		//cout << "psi_v = " << psi_v << endl;
+		//cout << "V_M = " << endl << V_M << endl;
 
 	}
 	return 0;

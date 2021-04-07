@@ -25,5 +25,5 @@
 		<arg name="respawn_mavros" default="$(arg respawn_mavros)" />
 	</include>
 
-	<node pkg="prometheus_mission" type="guidance_car" name="offb_guidance_car" output="screen"/>
+	<node pkg="prometheus_mission" type="uwb_attack_fix" name="offb_uwb_attack_fix" output="screen"/>
 </launch>

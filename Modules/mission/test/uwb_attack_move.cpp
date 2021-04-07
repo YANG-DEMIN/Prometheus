@@ -5,9 +5,8 @@
  *
  * Update Time: 2021.4.7
  *
- * descripation: attack a fake target
- *      1. virtual target location (15, -15, 0), P_T[0] must be positive, meaning that the missile can only attack the target
- * 			before it
+ * descripation: attack a fix target in UWB coordination.
+ *      1. subscribing the UWB consle message
  *      2. the iniitial height is 8 m, if the height is not enought, the missile will be bottom the ground when attacking the
  * 			target behind it.
  *      3. the guidance law is proportion guidance law.
@@ -24,6 +23,7 @@
 #include <stdlib.h>
 #include <iostream>
 #include <stdio.h>
+#include <std_msgs/String.h>
 #include <math_utils.h>
 #include <Eigen/Eigen>
 
@@ -38,34 +38,28 @@
 #include <mavros_msgs/SetMode.h>
 #include <mavros_msgs/State.h>
 
-#include <nlink_parser/LinktrackNode2.h>		//target information from Ground station
+#include <nlink_parser/LinktrackNodeframe2.h>
+//#include <nlink_parser/LinktrackAnchorframe0.h>
+#include <nlink_parser/LinktrackNode2.h>			//target information from Ground station
+#include <geometry_msgs/PoseStamped.h>
 
-//#include <circular.h>
 
 using namespace std;
 
-float desire_x = 0.0;				//desired altitude
-float desire_y = 0.0;				//desired altitude
-float desire_z = 8.0;				//desired altitude
-float desire_target_x = 15.0;				//desired altitude
-float desire_target_y = 15.0;				//desired altitude
-float desire_target_z = 15.0;				//desired altitude
+float desire_x = 0.0;				//loiter location
+float desire_y = 0.0;				
+float desire_z = 8.0;				
 
-float desire_Radius = 10.0;		//desired radius of circle
 float MoveTimeCnt = 0.0;
-float priod = 2000.0;			//to change velocity of flying using it
-
-//float DESIRE_V = 10;
 
 Eigen::Vector3d P_T0 = {200, 100, 50};		//initial position of Target
-Eigen::Vector3d P_M0 = {0, 0, 5};			//initial position of Missile
+Eigen::Vector3d P_M0 = {0, 0, 5};			//initial position of Missile  设置为非0值时有可能会跳过GPS安全检查
 Eigen::Vector3d V_T = {-3, 0, 0};			//velocity of Target
 Eigen::Vector3d V_M = {0, 0, 0};
 float VM = 5;						//velocity of Missile
 
 float K1 = 4;						//proportion of guidance
 float K2 = 4;
-float UpdateTime = 0.05;
 
 double sita = 0.0;
 double psi_v = 0.0;
@@ -119,37 +113,75 @@ double q_gamma_delta = 0;
 double delta_sita = 0.0;
 double delta_psi_v = 0.0;
 
+//for UWB message
+float target_pos[3];
+float uav_pos[3];
 //receive the current position of drone from controller
 
+float str2float(string str)
+{
+  float result;
+  stringstream stream(str);
+  stream >> result;
+  return result;
+}
 void state_cb(const mavros_msgs::State::ConstPtr& msg)
 {
 	current_state = *msg;
 }
 
-void target_cb(const geometry_msgs::PoseStamped::ConstPtr &msg)
+void pos_cb(const geometry_msgs::PoseStamped::ConstPtr &msg)
 {
 	//read the drone postion from the Mavros Package [Frame: ENU]
-	Eigen::Vector3d pos_target_fcu_enu(msg->pose.position.x, msg->pose.position.y, msg->pose.position.z);
+	Eigen::Vector3d pos_drone_fcu_enu(msg->pose.position.x, msg->pose.position.y, msg->pose.position.z);
 
-	P_T = pos_target_fcu_enu;
-	P_T[0] = 50;
-	P_T[1] = -50;
-	P_T[2] = 50;
+	pos_drone = pos_drone_fcu_enu;
+	position_get = pos_drone;
+	
+}
+
+void uwb_cb(const std_msgs::String::ConstPtr& msg)
+{
+  int num = msg->data.size();
+  target_pos[0] = str2float(msg->data.substr(8,15));
+  target_pos[1] = str2float(msg->data.substr(18,25));
+  target_pos[2] = str2float(msg->data.substr(28,35));
+  
+  uav_pos[0] = str2float(msg->data.substr(42,49));
+  uav_pos[1] = str2float(msg->data.substr(52,59));
+  uav_pos[2] = str2float(msg->data.substr(52,59));
+
+  P_M[0] = double(uav_pos[0]);
+  P_M[1] = double(uav_pos[1]);
+  P_M[2] = double(uav_pos[2]);
+  P_T[0] = double(target_pos[0]);
+  P_T[1] = double(target_pos[1]);
+  P_T[2] = double(target_pos[2]);
+
+//   printf("the size of string is %d\n",num);
+//   printf("%f\n", target_pos[0]);
+//   printf("%f\n", target_pos[1]);
+//   printf("%f\n", target_pos[2]);
+
 }
 
 void Guidance_Update(void)
 {
 	//update the position
-	P_M = position_get;
-	//cout << "P_M = position_get = " << P_M <<endl; 		//yes, i get the right position
-	P_T[0] = 15;
-	P_T[1] = -15;
-	P_T[2] = 15;
+	// P_M[0] = double(uav_pos[0]);
+	// P_M[1] = double(uav_pos[1]);
+	// P_M[2] = double(uav_pos[2]);
+	// P_T[0] = double(target_pos[0]);
+	// P_T[1] = double(target_pos[1]);
+	// P_T[2] = double(target_pos[2]);
+	// P_T[0] = 15;
+	// P_T[1] = -15;
+	// P_T[2] = 15;
 	
 	//update the attitude
-	phi = attitude_get[0];
-	gamma_vehicle = attitude_get[1];
-	psi = attitude_get[2];
+	// phi = attitude_get[0];
+	// gamma_vehicle = attitude_get[1];
+	// psi = attitude_get[2];
 
 
 	x_r_last = x_r;		//Because the feather of atan function 
@@ -178,65 +210,20 @@ void Guidance_Update(void)
 	}
     q_lambda_delta = q_lambda - q_lambda_last;
    	q_gamma_delta = q_gamma - q_gamma_last;
-
-	// cout << "q_lambda = " << q_lambda << endl;
-	// cout << "q_lambda_last = " << q_lambda_last << endl;
-	// cout << "q_gamma = " << q_gamma << endl;
-	// cout << "q_gamma_last = " << q_gamma_last << endl;
 	
 	delta_sita = K1 * q_gamma_delta;
     delta_psi_v = K2 * q_lambda_delta;
-	// if (delta_sita > 1 || delta_psi_v > 1)
-	// {
-	// 	delta_psi_v = 0;
-	// 	delta_sita = 0;
-	// }
-	//cout << "I come in, and now psi_v = " << psi_v  << " sita = " << sita << endl;	
+		
 	sita = sita + delta_sita;
    	psi_v = psi_v + delta_psi_v;
 	if (psi_v > 2 * M_PI)
 	{
 		psi_v = psi_v - 2 * M_PI;
 	}
-	//cout << "I come out, and now psi_v = " << psi_v  << " sita = " << sita << endl;
 	
-	// cout << "psi_v = " << psi_v << endl;
-	// cout << "sita = " << sita << endl;
 	V_M << VM * cos(sita) * cos(psi_v), VM * cos(sita) * sin(psi_v), VM * sin(sita);
 
 }
-
-void pos_cb(const geometry_msgs::PoseStamped::ConstPtr &msg)
-{
-	//read the drone postion from the Mavros Package [Frame: ENU]
-	Eigen::Vector3d pos_drone_fcu_enu(msg->pose.position.x, msg->pose.position.y, msg->pose.position.z);
-
-	pos_drone = pos_drone_fcu_enu;
-	position_get = pos_drone;
-	P_M = position_get;
-}
-
-void vel_cb(const geometry_msgs::TwistStamped::ConstPtr &msg)
-{
-	
-    velocity_get[0] = msg->twist.linear.x;
-    velocity_get[1] = msg->twist.linear.y;
-	velocity_get[2] = msg->twist.linear.z;
-}
-
-void att_cb(const sensor_msgs::Imu::ConstPtr& msg)
-{
-	Eigen::Quaterniond q_fcu = Eigen::Quaterniond(msg->orientation.w, msg->orientation.x, msg->orientation.y, msg->orientation.z);
-      //Transform the Quaternion to euler Angles
-      Eigen::Vector3d euler_fcu = quaternion_to_euler(q_fcu);
-
-      attitude_get = euler_fcu;
-		
-	att_rate_get[0] = msg->angular_velocity.x;
-      att_rate_get[1] = msg->angular_velocity.y;
-      att_rate_get[2] = msg->angular_velocity.z;
-      
- }
 
 //send the desired position to controller (xyz, yaw)
 void send_vel_setpoint(const Eigen::Vector3d& vel_sp)
@@ -278,6 +265,8 @@ void send_pos_setpoint(const Eigen::Vector3d& pos_sp, float yaw_sp)
 
 	setpoint_raw_local_pub.publish(pos_setpoint);
 }
+
+
 
 void FlyState_update(void)
 {
@@ -381,10 +370,9 @@ int main(int argc, char **argv)
 	ros::init(argc, argv, "circular_offboard");
 	ros::NodeHandle nh;
 	
-   	ros::Subscriber target_sub = nh.subscribe<geometry_msgs::PoseStamped>("/uav1/mavros/local_position/pose", 100, target_cb);	
 	ros::Subscriber state_sub = nh.subscribe<mavros_msgs::State>("/mavros/state", 10, state_cb);			//handle return function	
-    ros::Subscriber position_sub = nh.subscribe<geometry_msgs::PoseStamped>("/mavros/local_position/pose", 100, pos_cb);
-	ros::Subscriber attitude_sub = nh.subscribe<sensor_msgs::Imu>("/mavros/imu/data", 10, att_cb);
+	ros::Subscriber position_sub = nh.subscribe<geometry_msgs::PoseStamped>("/mavros/local_position/pose", 100, pos_cb);
+	ros::Subscriber uwb_sub = nh.subscribe("/nlink_linktrack_data_transmission", 1000, uwb_cb);
 
 	setpoint_raw_local_pub = nh.advertise<mavros_msgs::PositionTarget>("/mavros/setpoint_raw/local", 10);
 

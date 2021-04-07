@@ -18,6 +18,7 @@
 
 using namespace std;
 float target_pos[3];
+float uav_pos[3];
 //UWB callback function
 void tagframe2Callback(const nlink_parser::LinktrackNodeframe2::ConstPtr &msg) {
   int id;
@@ -65,10 +66,18 @@ void target_cb(const std_msgs::String::ConstPtr& msg)
   target_pos[0] = str2float(msg->data.substr(8,15));
   target_pos[1] = str2float(msg->data.substr(18,25));
   target_pos[2] = str2float(msg->data.substr(28,35));
+
+  uav_pos[0] = str2float(msg->data.substr(42,49));
+  uav_pos[1] = str2float(msg->data.substr(52,59));
+  uav_pos[2] = str2float(msg->data.substr(52,59));
   printf("the size of string is %d\n",num);
   printf("%f\n", target_pos[0]);
   printf("%f\n", target_pos[1]);
   printf("%f\n", target_pos[2]);
+
+  printf("%f\n", uav_pos[0]);
+  printf("%f\n", uav_pos[1]);
+  printf("%f\n", uav_pos[2]);
   //printf("lenght=: %d\n", msg->data.size);
 //  printf("\tstamp: %d\n", msg.header.stamp.sec);
 //  printf("\tPosition:\n");
