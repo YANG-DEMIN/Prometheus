@@ -46,7 +46,7 @@ using namespace std;
 
 float desire_x = 0.0;				//desired altitude
 float desire_y = 0.0;				//desired altitude
-float desire_z = 8.0;				//desired altitude
+float desire_z = 10.0;				//desired altitude
 float desire_target_x = 15.0;				//desired altitude
 float desire_target_y = 15.0;				//desired altitude
 float desire_target_z = 15.0;				//desired altitude
@@ -58,10 +58,10 @@ float priod = 2000.0;			//to change velocity of flying using it
 //float DESIRE_V = 10;
 
 Eigen::Vector3d P_T0 = {200, 100, 50};		//initial position of Target
-Eigen::Vector3d P_M0 = {0, 0, 5};			//initial position of Missile
+Eigen::Vector3d P_M0 = {0, 0, 2};			//initial position of Missile
 Eigen::Vector3d V_T = {-3, 0, 0};			//velocity of Target
 Eigen::Vector3d V_M = {0, 0, 0};
-float VM = 5;						//velocity of Missile
+float VM = 2;						//velocity of Missile
 
 float K1 = 4;						//proportion of guidance
 float K2 = 4;
@@ -144,7 +144,7 @@ void Guidance_Update(void)
 	//cout << "P_M = position_get = " << P_M <<endl; 		//yes, i get the right position
 	P_T[0] = 15;
 	P_T[1] = -15;
-	P_T[2] = 15;
+	P_T[2] = 2;
 	
 	//update the attitude
 	phi = attitude_get[0];

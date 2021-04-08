@@ -7,3 +7,5 @@ catkin_make --source Modules/planning --build build/planning
 catkin_make --source Simulator/gazebo_simulator --build build/prometheus_gazebo
 catkin_make --source Experiment --build build/prometheus_experiment
 
+catkin_make --source Modules/test_nlink --build build/test_nlink
+catkin_make --source Modules/nlink_parser --build build/nlink_parser

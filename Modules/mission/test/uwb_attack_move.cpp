@@ -56,7 +56,7 @@ Eigen::Vector3d P_T0 = {200, 100, 50};		//initial position of Target
 Eigen::Vector3d P_M0 = {0, 0, 5};			//initial position of Missile  设置为非0值时有可能会跳过GPS安全检查
 Eigen::Vector3d V_T = {-3, 0, 0};			//velocity of Target
 Eigen::Vector3d V_M = {0, 0, 0};
-float VM = 5;						//velocity of Missile
+float VM = 2;						//velocity of Missile
 
 float K1 = 4;						//proportion of guidance
 float K2 = 4;
@@ -125,6 +125,7 @@ float str2float(string str)
   stream >> result;
   return result;
 }
+
 void state_cb(const mavros_msgs::State::ConstPtr& msg)
 {
 	current_state = *msg;
@@ -149,7 +150,7 @@ void uwb_cb(const std_msgs::String::ConstPtr& msg)
   
   uav_pos[0] = str2float(msg->data.substr(42,49));
   uav_pos[1] = str2float(msg->data.substr(52,59));
-  uav_pos[2] = str2float(msg->data.substr(52,59));
+  uav_pos[2] = str2float(msg->data.substr(62,69));
 
   P_M[0] = double(uav_pos[0]);
   P_M[1] = double(uav_pos[1]);
