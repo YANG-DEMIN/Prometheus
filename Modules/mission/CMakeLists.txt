@@ -165,6 +165,11 @@ target_link_libraries(uwb_attack_fix ${catkin_LIBRARIES})
 add_executable(uwb_attack_move test/uwb_attack_move.cpp)
 add_dependencies(uwb_attack_move prometheus_mission_gencpp)
 target_link_libraries(uwb_attack_move ${catkin_LIBRARIES})
+
+add_executable(guidance_rtk test/guidance_rtk.cpp)
+add_dependencies(guidance_rtk prometheus_mission_gencpp)
+target_link_libraries(guidance_rtk ${catkin_LIBRARIES})
+
 #############
 ## Install ##
 #############

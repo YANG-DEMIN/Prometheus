@@ -29,31 +29,22 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/TwistStamped.h>
 #include <sensor_msgs/Imu.h>
-#include <sensor_msgs/NavSatFix.h>
 #include <mavros_msgs/AttitudeTarget.h>
 #include <mavros_msgs/PositionTarget.h>
 #include <mavros_msgs/ActuatorControl.h>
 #include <mavros_msgs/CommandBool.h>
 #include <mavros_msgs/SetMode.h>
 #include <mavros_msgs/State.h>
-#include <mavros_msgs/HomePosition.h>
 
 #include <nlink_parser/LinktrackNode2.h>		//target information from Ground station
 
-// #define LAT_0		47.3900
-// #define LON_0		8.5400
-#define RADIUS	 		6378137
-#define f		1/298.257223563
 //#include <circular.h>
 
 using namespace std;
-double e = 0.0;
-double Rm = 0.0;
-double Rn = 0.0;
 
 float desire_x = 0.0;				//desired altitude
 float desire_y = 0.0;				//desired altitude
-float desire_z = 15.0;				//desired altitude
+float desire_z = 5.0;				//desired altitude
 float desire_target_x = 200.0;				//desired altitude
 float desire_target_y = 100.0;				//desired altitude
 float desire_target_z = 50.0;				//desired altitude
@@ -71,9 +62,6 @@ Eigen::Vector3d V_M = {0, 0, 0};
 float VM = 5;						//velocity of Missile
 float VT = 3;
 
-float K1 = 4;						//proportion of guidance
-float K2 = 4;
-float UpdateTime = 0.05;
 
 double sita = 0.0;
 double psi_v = 0.0;
@@ -94,9 +82,6 @@ Eigen::Vector3d temp_pos_drone;
 Eigen::Vector3d temp_pos_target;
 Eigen::Vector3d velocity_sp;
 
-Eigen::Vector3d home;
-//Eigen::Vector3d uav_home;
-
 mavros_msgs::SetMode mode_cmd;
 ros::Publisher setpoint_raw_local_pub;
 ros::ServiceClient set_mode_client;
@@ -115,66 +100,72 @@ Eigen::Matrix3d L;
 Eigen::Vector3d P_r;
 Eigen::Vector3d P_T = P_T0;
 Eigen::Vector3d P_M = P_M0;
+double x_t = 200.0;
+double y_t = 100.0;
+double z_t = 50.0;
+double x_m = 0.0;
+double y_m = 0.0;
+double z_m = 5.0;
+double v_t_x = -3.0;
+double v_t_y = 0.0;
+double v_t_z = 0.0;
 
-double x_r = 0;
-double y_r = 0;
-double z_r = 0;
+
+//distance of target
+double R_T1 = sqrt(x_t*x_t + y_t*y_t);
+double R_T2 = sqrt(x_t*x_t + y_t*y_t + z_t*z_t);
+//angle of velocity
+double epsilon_T1 = atan(y_t / x_t);
+double epsilon_T2 = atan(z_t / sqrt(x_t*x_t + y_t*y_t));
+double epsilon_T1_last = epsilon_T1;
+double epsilon_T2_last = epsilon_T2;
+double d_epsilon_T1 = 0.0;
+double d_epsilon_T2 = 0.0;
+//angle between velocity and LOS
+double eta_T1 = M_PI - atan(y_t / x_t);
+double eta_T2 = M_PI - atan(z_t / sqrt(x_t*x_t + y_t*y_t));
+
+double theta_T1 = 0.0;
+double theta_T2 = 0.0;
+//distance of missile
+double R1 = sqrt(x_m*x_m + y_m*y_m);
+double R2 = sqrt(x_m*x_m + y_m*y_m + z_m*z_m);
+double dR1 = 0.0;
+double dR2 = 0.0;
+//angle of velocity
+double epsilon_1 = atan(y_m / x_m);
+double epsilon_2 = atan(z_m / sqrt(x_m*x_m + y_m*y_m));
+double d_epsilon_1 = 0.0;
+double d_epsilon_2 = 0.0;
+
+double eta_1 = 0.0;
+double eta_2 = 0.0;
+
+double theta_1 = 0.0;
+double theta_2 = 0.0;
+
+double x_r = 1;
+double y_r = 1;
+double z_r = 1;
 double x_r_last = 0;
 double y_r_last = 0;
 double z_r_last = 0;
-double q_lambda = 0;
-double q_gamma = 0;
-double q_lambda_last = 0;
-double q_gamma_last= 0;
-double q_lambda_delta = 0;
-double q_gamma_delta = 0;
-double delta_sita = 0.0;
-double delta_psi_v = 0.0;
 
 
+//receive the current position of drone from controller
 
-
-// void target_pos_cb(const sensor_msgs::NavSatFix::ConstPtr &msg)
-// {
-// 	//read the drone postion from the Mavros Package [Frame: ENU]
-// 	Eigen::Vector3d pos_drone_fcu_enu(msg->latitude, msg->longitude, msg->altitude);
-
-// 	pos_drone[0] = (pos_drone_fcu_enu[0] - LAT_0) * LAT_TO_M;
-// 	pos_drone[1] = (pos_drone_fcu_enu[1] - LON_0) * LAT_TO_M;
-// 	pos_drone[2] = pos_drone_fcu_enu[2] - 50;
-// 	//pos_drone = pos_drone_fcu_enu;
-// 	position_get = pos_drone;
-// 	P_M = position_get;
-// }
-
-void target_cb(const sensor_msgs::NavSatFix::ConstPtr &msg)
+void state_cb(const mavros_msgs::State::ConstPtr& msg)
 {
-	//read the drone postion from the Mavros Package [Frame: ENU]
-	Eigen::Vector3d pos_target_fcu_enu(msg->latitude, msg->longitude, msg->altitude);
-
-	//e = sqrt(FLATTENING*(2-FLATTENING));
-	Rm = RADIUS * (1 - 2*f + 3*f*sin(home[0]) * sin(home[0]));
-	Rn = RADIUS * (1 + f * sin(home[0]) * sin(home[0]));
-
-	P_T[0] = (pos_target_fcu_enu[1] - home[1]) * M_PI / 180.0 * (Rn + pos_target_fcu_enu[2]) * cos(home[0] * M_PI / 180);		//东 经度
-	P_T[1] = (pos_target_fcu_enu[0] - home[0]) * M_PI / 180.0 * (Rm + pos_target_fcu_enu[2]);			//北 维度
-	P_T[2] = pos_target_fcu_enu[2] - home[2];
-
-	// P_T[0] = (pos_target_fcu_enu[0] - home[0]) * LAT_TO_M;
-	// P_T[1] = (pos_target_fcu_enu[1] - home[1]) * 110946.252133;
-	// P_T[2] = pos_target_fcu_enu[2] - home[2];
-
+	current_state = *msg;
 }
 
-//mavros_msgs::HomePosition;
-void home_cb(const mavros_msgs::HomePosition::ConstPtr& msg)
-{ 	
+void target_cb(const geometry_msgs::PoseStamped::ConstPtr &msg)
+{
 	//read the drone postion from the Mavros Package [Frame: ENU]
-	home[0] = msg->geo.latitude;
-	home[1] = msg->geo.longitude;
-	home[2] = msg->geo.altitude;
+	Eigen::Vector3d pos_target_fcu_enu(msg->pose.position.x, msg->pose.position.y, msg->pose.position.z);
 
- }
+	P_T = pos_target_fcu_enu;
+}
 
 void target_velocity_cb(const geometry_msgs::TwistStamped::ConstPtr &msg)
 {
@@ -191,59 +182,75 @@ void Guidance_Update(void)
 	P_M = position_get;
 	//cout << "P_M = position_get = " << P_M <<endl; 		//yes, i get the right position
 	P_T= P_T;
+	x_t = P_T[0];
+	y_t = P_T[1];
+	z_t = P_T[2];
 
-	x_r_last = x_r;		//Because the feather of atan function 
-	y_r_last = y_r;
-	z_r_last = z_r;
+	x_m = P_M[0];
+	y_m = P_M[1];
+	z_m = P_M[2];
+
+	v_t_x = V_T[0];
+	v_t_y = V_T[1];
+	v_t_z = V_T[2];
 
 	P_r = P_T - P_M;
-
-	// cout << "P_r = " << endl << P_r << endl;
-
 	x_r = P_r[0];
 	y_r = P_r[1];
 	z_r = P_r[2];
 
-	q_lambda = atan2(y_r , x_r);
-   	q_gamma = atan2(z_r , sqrt(x_r * x_r + y_r * y_r));
-    q_lambda_last = atan2(y_r_last , x_r_last);
-    q_gamma_last = atan2(z_r_last , sqrt(x_r_last * x_r_last + y_r_last * y_r_last));
-
-	// q_lambda = atan(y_r /x_r);
-   	// q_gamma = - atan(z_r/sqrt(x_r * x_r + y_r * y_r));
-    // q_lambda_last = atan(y_r_last/x_r_last);
-    // q_gamma_last = - atan(z_r_last/sqrt(x_r_last * x_r_last + y_r_last * y_r_last));
-	if (q_lambda_last == atan2(0, 0) && q_gamma_last == atan2(0, 0))
-	{
-		q_lambda_last = q_lambda;
-		q_gamma_last = q_gamma;
-		cout << "I CHANGE THE VALUE!!!" << endl;
-	}
-    q_lambda_delta = q_lambda - q_lambda_last;
-   	q_gamma_delta = q_gamma - q_gamma_last;
 	
-	delta_sita = K1 * q_gamma_delta;
-    delta_psi_v = K2 * q_lambda_delta;
-		
-	sita = sita + delta_sita;
-   	psi_v = psi_v + delta_psi_v;
-	if (psi_v > 2 * M_PI)
-	{
-		psi_v = psi_v - 2 * M_PI;
-	}
+	//update the target information*** 1 *****
+	R_T1 = sqrt(x_t * x_t + y_t * y_t);
+	epsilon_T1 = atan(y_t / x_t);
+
+	//此处不要除以时间
+	d_epsilon_T1 = (epsilon_T1 - epsilon_T1_last);
+	epsilon_T1_last = epsilon_T1;
+
+	theta_T1 = M_PI + atan(v_t_y / v_t_x);
+	eta_T1 = epsilon_T1 - theta_T1;
+
+	d_epsilon_1 = d_epsilon_T1;
+	epsilon_1 = epsilon_T1;
+
+	eta_1 = asin(-R1 * d_epsilon_1 / VM);	//此处VM为恒定值5
+
+	theta_1 = epsilon_1 - eta_1;
+
+	//update the target information**** 2 ******
+	R_T2 = sqrt(x_t * x_t + y_t * y_t + z_t*z_t);
+	epsilon_T2 = atan(z_t / sqrt(x_t*x_t + y_t*y_t));
+
 	
-	V_M << VM * cos(sita) * cos(psi_v), VM * cos(sita) * sin(psi_v), VM * sin(sita);
-	// cout << "sita = " << sita << endl;
-	// cout << "psi_v = " << psi_v << endl;
+	d_epsilon_T2 = (epsilon_T2 - epsilon_T2_last);
+	epsilon_T2_last = epsilon_T2;
 
-}
+	//此处要确定下符号 速度大小也需要重新获取
+	theta_T2 = M_PI + asin(v_t_z / VT);
+	eta_T2 = epsilon_T2 - theta_T2;
 
+	d_epsilon_2 = d_epsilon_T2;
+	epsilon_2 = epsilon_T2;
 
-//receive the current position of drone from controller
+	//cout << "R2 = " << R2 <<endl;
+	//cout << "d_epsilon_2 = " << d_epsilon_2 <<endl;
+	eta_2 = asin(-R2 * d_epsilon_2 / VM);	//此处VM为恒定值5
 
-void state_cb(const mavros_msgs::State::ConstPtr& msg)
-{
-	current_state = *msg;
+	//cout << "eta_2 = " << eta_2 << endl;
+	//cout << "R2 = " << R2 << endl;
+	//cout << "epsilon_T2 = " << epsilon_T2 << endl;
+
+	theta_2 = epsilon_2 - eta_2;	
+
+	//cout << "psi_v = " << psi_v << endl;
+	theta_1 = theta_1 * 1.35;
+	theta_2 = theta_2 * 1.20;
+	//vz 的theta2符号需要确认
+	V_M << VM * cos(theta_2) * cos(theta_1), VM * cos(theta_2) * sin(theta_1), VM * sin(theta_2);
+	cout << "theta_1 = " << theta_1 << endl;
+	cout << "theta_2 = " << theta_2 << endl;
+
 }
 
 void pos_cb(const geometry_msgs::PoseStamped::ConstPtr &msg)
@@ -253,7 +260,7 @@ void pos_cb(const geometry_msgs::PoseStamped::ConstPtr &msg)
 
 	pos_drone = pos_drone_fcu_enu;
 	position_get = pos_drone;
-	
+	P_M = position_get;
 }
 
 void vel_cb(const geometry_msgs::TwistStamped::ConstPtr &msg)
@@ -372,14 +379,12 @@ void FlyState_update(void)
 			send_pos_setpoint(pos_target, 0);
 			MoveTimeCnt += 1;
 			
-			if(MoveTimeCnt >= 200)
-			// if(MoveTimeCnt >= 100 && abs(P_T[0] - desire_target_x) < 3 && abs(P_T[1] - desire_target_y) < 3 
-			// 	&& abs(P_T[2] - desire_target_z) < 3)
+			if(MoveTimeCnt >= 100 && abs(P_T[0] - desire_target_x) < 3 && abs(P_T[1] - desire_target_y) < 3 
+				&& abs(P_T[2] - desire_target_z) < 3)
 			//if(MoveTimeCnt >= 100 )
 			{
 				MoveTimeCnt = 0;
 				FlyState = FLY;
-				cout << "---- Start attack!!! ----" <<endl;
 			}
 			if(current_state.mode != "OFFBOARD")			//if it is switched to "onboard" mode, jump to the "WATTING"
 			{
@@ -421,17 +426,14 @@ void FlyState_update(void)
 
 int main(int argc, char **argv)
 {
-	ros::init(argc, argv, "guidance_sitl");
+	ros::init(argc, argv, "circular_offboard");
 	ros::NodeHandle nh;
 	
-   	//ros::Subscriber target_local_sub = nh.subscribe<geometry_msgs::PoseStamped>("/uav1/mavros/local_position/pose", 100, target_cb);
-	ros::Subscriber target_global_sub = nh.subscribe<sensor_msgs::NavSatFix>("/uav1/mavros/global_position/global", 100, target_cb);	
-
+   	ros::Subscriber target_sub = nh.subscribe<geometry_msgs::PoseStamped>("/uav1/mavros/local_position/pose", 100, target_cb);	
+	ros::Subscriber target_velocity_sub = nh.subscribe<geometry_msgs::TwistStamped>("/uav1/mavros/local_position/velocity_local", 100, target_velocity_cb);
 	ros::Subscriber state_sub = nh.subscribe<mavros_msgs::State>("/uav0/mavros/state", 10, state_cb);			//handle return function	
-    ros::Subscriber local_position_sub = nh.subscribe<geometry_msgs::PoseStamped>("/uav0/mavros/local_position/pose", 100, pos_cb);
-	//ros::Subscriber global_position_sub = nh.subscribe<sensor_msgs::NavSatFix>("/uav0/mavros/global_position/global", 100, pos_cb);
-	ros::Subscriber home_sub = nh.subscribe<mavros_msgs::HomePosition>("/uav0/mavros/home_position/home", 100, home_cb);
-	ros::Subscriber attitude_sub = nh.subscribe<sensor_msgs::Imu>("uav0//mavros/imu/data", 10, att_cb);
+    ros::Subscriber position_sub = nh.subscribe<geometry_msgs::PoseStamped>("/uav0/mavros/local_position/pose", 100, pos_cb);
+	ros::Subscriber attitude_sub = nh.subscribe<sensor_msgs::Imu>("/uav0/mavros/imu/data", 10, att_cb);
 
 	setpoint_raw_local_pub = nh.advertise<mavros_msgs::PositionTarget>("/uav0/mavros/setpoint_raw/local", 10);
 

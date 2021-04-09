@@ -29,31 +29,22 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/TwistStamped.h>
 #include <sensor_msgs/Imu.h>
-#include <sensor_msgs/NavSatFix.h>
 #include <mavros_msgs/AttitudeTarget.h>
 #include <mavros_msgs/PositionTarget.h>
 #include <mavros_msgs/ActuatorControl.h>
 #include <mavros_msgs/CommandBool.h>
 #include <mavros_msgs/SetMode.h>
 #include <mavros_msgs/State.h>
-#include <mavros_msgs/HomePosition.h>
 
 #include <nlink_parser/LinktrackNode2.h>		//target information from Ground station
 
-// #define LAT_0		47.3900
-// #define LON_0		8.5400
-#define RADIUS	 		6378137
-#define f		1/298.257223563
 //#include <circular.h>
 
 using namespace std;
-double e = 0.0;
-double Rm = 0.0;
-double Rn = 0.0;
 
 float desire_x = 0.0;				//desired altitude
 float desire_y = 0.0;				//desired altitude
-float desire_z = 15.0;				//desired altitude
+float desire_z = 5.0;				//desired altitude
 float desire_target_x = 200.0;				//desired altitude
 float desire_target_y = 100.0;				//desired altitude
 float desire_target_z = 50.0;				//desired altitude
@@ -94,9 +85,6 @@ Eigen::Vector3d temp_pos_drone;
 Eigen::Vector3d temp_pos_target;
 Eigen::Vector3d velocity_sp;
 
-Eigen::Vector3d home;
-//Eigen::Vector3d uav_home;
-
 mavros_msgs::SetMode mode_cmd;
 ros::Publisher setpoint_raw_local_pub;
 ros::ServiceClient set_mode_client;
@@ -132,49 +120,20 @@ double delta_sita = 0.0;
 double delta_psi_v = 0.0;
 
 
+//receive the current position of drone from controller
 
-
-// void target_pos_cb(const sensor_msgs::NavSatFix::ConstPtr &msg)
-// {
-// 	//read the drone postion from the Mavros Package [Frame: ENU]
-// 	Eigen::Vector3d pos_drone_fcu_enu(msg->latitude, msg->longitude, msg->altitude);
-
-// 	pos_drone[0] = (pos_drone_fcu_enu[0] - LAT_0) * LAT_TO_M;
-// 	pos_drone[1] = (pos_drone_fcu_enu[1] - LON_0) * LAT_TO_M;
-// 	pos_drone[2] = pos_drone_fcu_enu[2] - 50;
-// 	//pos_drone = pos_drone_fcu_enu;
-// 	position_get = pos_drone;
-// 	P_M = position_get;
-// }
-
-void target_cb(const sensor_msgs::NavSatFix::ConstPtr &msg)
+void state_cb(const mavros_msgs::State::ConstPtr& msg)
 {
-	//read the drone postion from the Mavros Package [Frame: ENU]
-	Eigen::Vector3d pos_target_fcu_enu(msg->latitude, msg->longitude, msg->altitude);
-
-	//e = sqrt(FLATTENING*(2-FLATTENING));
-	Rm = RADIUS * (1 - 2*f + 3*f*sin(home[0]) * sin(home[0]));
-	Rn = RADIUS * (1 + f * sin(home[0]) * sin(home[0]));
-
-	P_T[0] = (pos_target_fcu_enu[1] - home[1]) * M_PI / 180.0 * (Rn + pos_target_fcu_enu[2]) * cos(home[0] * M_PI / 180);		//东 经度
-	P_T[1] = (pos_target_fcu_enu[0] - home[0]) * M_PI / 180.0 * (Rm + pos_target_fcu_enu[2]);			//北 维度
-	P_T[2] = pos_target_fcu_enu[2] - home[2];
-
-	// P_T[0] = (pos_target_fcu_enu[0] - home[0]) * LAT_TO_M;
-	// P_T[1] = (pos_target_fcu_enu[1] - home[1]) * 110946.252133;
-	// P_T[2] = pos_target_fcu_enu[2] - home[2];
-
+	current_state = *msg;
 }
 
-//mavros_msgs::HomePosition;
-void home_cb(const mavros_msgs::HomePosition::ConstPtr& msg)
-{ 	
+void target_cb(const geometry_msgs::PoseStamped::ConstPtr &msg)
+{
 	//read the drone postion from the Mavros Package [Frame: ENU]
-	home[0] = msg->geo.latitude;
-	home[1] = msg->geo.longitude;
-	home[2] = msg->geo.altitude;
+	Eigen::Vector3d pos_target_fcu_enu(msg->pose.position.x, msg->pose.position.y, msg->pose.position.z);
 
- }
+	P_T = pos_target_fcu_enu;
+}
 
 void target_velocity_cb(const geometry_msgs::TwistStamped::ConstPtr &msg)
 {
@@ -197,9 +156,6 @@ void Guidance_Update(void)
 	z_r_last = z_r;
 
 	P_r = P_T - P_M;
-
-	// cout << "P_r = " << endl << P_r << endl;
-
 	x_r = P_r[0];
 	y_r = P_r[1];
 	z_r = P_r[2];
@@ -233,17 +189,8 @@ void Guidance_Update(void)
 	}
 	
 	V_M << VM * cos(sita) * cos(psi_v), VM * cos(sita) * sin(psi_v), VM * sin(sita);
-	// cout << "sita = " << sita << endl;
-	// cout << "psi_v = " << psi_v << endl;
-
-}
 
 
-//receive the current position of drone from controller
-
-void state_cb(const mavros_msgs::State::ConstPtr& msg)
-{
-	current_state = *msg;
 }
 
 void pos_cb(const geometry_msgs::PoseStamped::ConstPtr &msg)
@@ -253,7 +200,7 @@ void pos_cb(const geometry_msgs::PoseStamped::ConstPtr &msg)
 
 	pos_drone = pos_drone_fcu_enu;
 	position_get = pos_drone;
-	
+	P_M = position_get;
 }
 
 void vel_cb(const geometry_msgs::TwistStamped::ConstPtr &msg)
@@ -372,14 +319,12 @@ void FlyState_update(void)
 			send_pos_setpoint(pos_target, 0);
 			MoveTimeCnt += 1;
 			
-			if(MoveTimeCnt >= 200)
-			// if(MoveTimeCnt >= 100 && abs(P_T[0] - desire_target_x) < 3 && abs(P_T[1] - desire_target_y) < 3 
-			// 	&& abs(P_T[2] - desire_target_z) < 3)
+			if(MoveTimeCnt >= 100 && abs(P_T[0] - desire_target_x) < 3 && abs(P_T[1] - desire_target_y) < 3 
+				&& abs(P_T[2] - desire_target_z) < 3)
 			//if(MoveTimeCnt >= 100 )
 			{
 				MoveTimeCnt = 0;
 				FlyState = FLY;
-				cout << "---- Start attack!!! ----" <<endl;
 			}
 			if(current_state.mode != "OFFBOARD")			//if it is switched to "onboard" mode, jump to the "WATTING"
 			{
@@ -421,17 +366,14 @@ void FlyState_update(void)
 
 int main(int argc, char **argv)
 {
-	ros::init(argc, argv, "guidance_sitl");
+	ros::init(argc, argv, "circular_offboard");
 	ros::NodeHandle nh;
 	
-   	//ros::Subscriber target_local_sub = nh.subscribe<geometry_msgs::PoseStamped>("/uav1/mavros/local_position/pose", 100, target_cb);
-	ros::Subscriber target_global_sub = nh.subscribe<sensor_msgs::NavSatFix>("/uav1/mavros/global_position/global", 100, target_cb);	
-
+   	ros::Subscriber target_sub = nh.subscribe<geometry_msgs::PoseStamped>("/uav1/mavros/local_position/pose", 100, target_cb);	
+	ros::Subscriber target_velocity_sub = nh.subscribe<geometry_msgs::TwistStamped>("/uav1/mavros/local_position/velocity_local", 100, target_velocity_cb);
 	ros::Subscriber state_sub = nh.subscribe<mavros_msgs::State>("/uav0/mavros/state", 10, state_cb);			//handle return function	
-    ros::Subscriber local_position_sub = nh.subscribe<geometry_msgs::PoseStamped>("/uav0/mavros/local_position/pose", 100, pos_cb);
-	//ros::Subscriber global_position_sub = nh.subscribe<sensor_msgs::NavSatFix>("/uav0/mavros/global_position/global", 100, pos_cb);
-	ros::Subscriber home_sub = nh.subscribe<mavros_msgs::HomePosition>("/uav0/mavros/home_position/home", 100, home_cb);
-	ros::Subscriber attitude_sub = nh.subscribe<sensor_msgs::Imu>("uav0//mavros/imu/data", 10, att_cb);
+    ros::Subscriber position_sub = nh.subscribe<geometry_msgs::PoseStamped>("/uav0/mavros/local_position/pose", 100, pos_cb);
+	ros::Subscriber attitude_sub = nh.subscribe<sensor_msgs::Imu>("/uav0/mavros/imu/data", 10, att_cb);
 
 	setpoint_raw_local_pub = nh.advertise<mavros_msgs::PositionTarget>("/uav0/mavros/setpoint_raw/local", 10);
 
