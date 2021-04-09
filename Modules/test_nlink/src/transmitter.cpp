@@ -40,7 +40,7 @@ void Anchorframe0Callback(const nlink_parser::LinktrackAnchorframe0::ConstPtr &m
       target_id = item.id;
       target_pos[0] = item.pos_3d[0];
       target_pos[1] = item.pos_3d[1];
-      target_pos[2] = item.pos_3d[2];
+      target_pos[2] = - item.pos_3d[2];
     }
 
     if(item.id == 1)
@@ -48,7 +48,7 @@ void Anchorframe0Callback(const nlink_parser::LinktrackAnchorframe0::ConstPtr &m
       uav_id = item.id;
       uav_pos[0] = item.pos_3d[0];
       uav_pos[1] = item.pos_3d[1];
-      uav_pos[2] = item.pos_3d[2];
+      uav_pos[2] = - item.pos_3d[2];
     }
 
   }

@@ -32,7 +32,7 @@
 
 using namespace std;
 
-float desire_z = 15.0;				//desired altitude
+float desire_z = 5.0;				//desired altitude
 float desire_Radius = 5.0;		//desired radius of circle
 float MoveTimeCnt = 0.0;
 float priod = 2000.0;			//to change velocity of flying using it

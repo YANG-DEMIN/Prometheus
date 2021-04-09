@@ -146,11 +146,11 @@ void uwb_cb(const std_msgs::String::ConstPtr& msg)
   int num = msg->data.size();
   target_pos[0] = str2float(msg->data.substr(8,15));
   target_pos[1] = str2float(msg->data.substr(18,25));
-  target_pos[2] = str2float(msg->data.substr(28,35));
+  target_pos[2] = - str2float(msg->data.substr(28,35));
   
   uav_pos[0] = str2float(msg->data.substr(42,49));
   uav_pos[1] = str2float(msg->data.substr(52,59));
-  uav_pos[2] = str2float(msg->data.substr(62,69));
+  uav_pos[2] = - str2float(msg->data.substr(62,69));
 
   P_M[0] = double(uav_pos[0]);
   P_M[1] = double(uav_pos[1]);
