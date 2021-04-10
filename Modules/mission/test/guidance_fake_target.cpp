@@ -46,7 +46,7 @@ using namespace std;
 
 float desire_x = 0.0;				//desired altitude
 float desire_y = 0.0;				//desired altitude
-float desire_z = 10.0;				//desired altitude
+float desire_z = 5.0;				//desired altitude
 float desire_target_x = 15.0;				//desired altitude
 float desire_target_y = 15.0;				//desired altitude
 float desire_target_z = 15.0;				//desired altitude

@@ -53,7 +53,7 @@ double Rn = 0.0;
 
 float desire_x = 0.0;				//desired altitude
 float desire_y = 0.0;				//desired altitude
-float desire_z = 15.0;				//desired altitude
+float desire_z = 5.0;				//desired altitude
 float desire_target_x = 200.0;				//desired altitude
 float desire_target_y = 100.0;				//desired altitude
 float desire_target_z = 50.0;				//desired altitude

@@ -48,7 +48,7 @@ using namespace std;
 
 float desire_x = 0.0;				//loiter location
 float desire_y = 0.0;				
-float desire_z = 8.0;				
+float desire_z = 5.0;				
 
 float MoveTimeCnt = 0.0;
 
