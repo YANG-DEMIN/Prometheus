@@ -1,0 +1,32 @@
+<!-- 本launch文件适用于　配置机载电脑及飞控的无人机 -->
+<!-- 每个无人机通过VICON/GPS/UWB定位 -->
+<!-- 每个无人机及地面电脑连接同一路由器 -->
+<!-- 地面站统一给各个无人机发送阵型变化等上层控制指令，控制则在无人机端完成 -->
+<launch>
+	<!-- 1号飞机 -->
+    <group ns="uav0">
+		<arg name="fcu_url" default="/dev/ttyUSB0:921600" />
+		<arg name="gcs_url" default="" />
+		<arg name="tgt_system" default="1" />
+		<arg name="tgt_component" default="1" />
+		<arg name="log_output" default="screen" />
+		<arg name="fcu_protocol" default="v2.0" />
+		<arg name="respawn_mavros" default="false" />
+
+		<include file="$(find mavros)/launch/node.launch">
+			<arg name="pluginlists_yaml" value="$(find mavros)/launch/px4_pluginlists.yaml" />
+			<arg name="config_yaml" value="$(find mavros)/launch/px4_config.yaml" />
+
+			<arg name="fcu_url" value="$(arg fcu_url)" />
+			<arg name="gcs_url" value="$(arg gcs_url)" />
+			<arg name="tgt_system" value="$(arg tgt_system)" />
+			<arg name="tgt_component" value="$(arg tgt_component)" />
+			<arg name="log_output" value="$(arg log_output)" />
+			<arg name="fcu_protocol" value="$(arg fcu_protocol)" />
+			<arg name="respawn_mavros" default="$(arg respawn_mavros)" />
+		</include>
+
+    </group>
+
+</launch>
+

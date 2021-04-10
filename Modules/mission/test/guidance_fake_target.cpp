@@ -61,7 +61,7 @@ Eigen::Vector3d P_T0 = {200, 100, 50};		//initial position of Target
 Eigen::Vector3d P_M0 = {0, 0, 2};			//initial position of Missile
 Eigen::Vector3d V_T = {-3, 0, 0};			//velocity of Target
 Eigen::Vector3d V_M = {0, 0, 0};
-float VM = 2;						//velocity of Missile
+float VM = 4;						//velocity of Missile
 
 float K1 = 4;						//proportion of guidance
 float K2 = 4;

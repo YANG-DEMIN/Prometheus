@@ -216,7 +216,7 @@ int main(int argc, char **argv)
 	setpoint_raw_local_pub = nh.advertise<mavros_msgs::PositionTarget>("/mavros/setpoint_raw/local", 10);
 
 	set_mode_client = nh.serviceClient<mavros_msgs::SetMode>("/mavros/set_mode");			//little question
-		nh.param<float>("desire_z", desire_z, 15.0);
+		nh.param<float>("desire_z", desire_z, 5.0);
 		nh.param<float>("desire_Radius", desire_Radius, 5.0);
 
 	cout << "circular node started!!!" << endl; 
