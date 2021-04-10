@@ -26,6 +26,9 @@
 			<arg name="respawn_mavros" default="$(arg respawn_mavros)" />
 		</include>
 
+		<node pkg="prometheus_mission" type="rtk_uav" name="offb_rtk_uav" output="screen">
+		</node>
+
     </group>
 
 </launch>
