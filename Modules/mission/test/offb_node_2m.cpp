@@ -32,7 +32,7 @@
 
 using namespace std;
 
-float desire_z = 2.0;				//desired altitude
+float desire_z = 15.0;				//desired altitude
 float MoveTimeCnt = 0.0;
 float priod = 2000.0;			//to change velocity of flying using it
 
@@ -146,8 +146,8 @@ void FlyState_update(void)
 			//cout << "PREPARE" << endl;
 			break;
 		case REST:
-			pos_target[0] = 0;
-			pos_target[1] = 0;
+			pos_target[0] = 20;
+			pos_target[1] = 20;
 			pos_target[2] = desire_z;
 			send_pos_setpoint(pos_target, 0);
 			MoveTimeCnt += 1;
@@ -164,8 +164,8 @@ void FlyState_update(void)
 			break;
 		case FLY:
 			{
-			    pos_target[0] = 0;
-			    pos_target[1] = 0;
+			    pos_target[0] = 20;
+			    pos_target[1] = 20;
 			    pos_target[2] = desire_z;
 				send_pos_setpoint(pos_target, 0);
 

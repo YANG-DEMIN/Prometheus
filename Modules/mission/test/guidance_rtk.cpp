@@ -253,7 +253,7 @@ void pos_cb(const geometry_msgs::PoseStamped::ConstPtr &msg)
 
 	pos_drone = pos_drone_fcu_enu;
 	position_get = pos_drone;
-	
+	P_M = position_get;
 }
 
 void vel_cb(const geometry_msgs::TwistStamped::ConstPtr &msg)

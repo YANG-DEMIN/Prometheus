@@ -3,12 +3,14 @@
  *
  * Author: Ydm
  *
- * Update Time: 2020.8.14
+ * Update Time: 2021.4.7
  *
- * descripation: demostration of proportion guidance on sitl model
- *      1.
- *      2.
- *      3.
+ * descripation: attack a fake target
+ *      1. virtual target location (15, -15, 0), P_T[0] must be positive, meaning that the missile can only attack the target
+ * 			before it
+ *      2. the iniitial height is 8 m, if the height is not enought, the missile will be bottom the ground when attacking the
+ * 			target behind it.
+ *      3. the guidance law is proportion guidance law.
 ***************************************************************************************************************************/
 
 #include <ros/ros.h>
@@ -45,9 +47,9 @@ using namespace std;
 float desire_x = 0.0;				//desired altitude
 float desire_y = 0.0;				//desired altitude
 float desire_z = 5.0;				//desired altitude
-float desire_target_x = 200.0;				//desired altitude
-float desire_target_y = 100.0;				//desired altitude
-float desire_target_z = 50.0;				//desired altitude
+float desire_target_x = 20.0;				//desired altitude
+float desire_target_y = 20.0;				//desired altitude
+float desire_target_z = 15.0;				//desired altitude
 
 float desire_Radius = 10.0;		//desired radius of circle
 float MoveTimeCnt = 0.0;
@@ -56,13 +58,14 @@ float priod = 2000.0;			//to change velocity of flying using it
 //float DESIRE_V = 10;
 
 Eigen::Vector3d P_T0 = {200, 100, 50};		//initial position of Target
-Eigen::Vector3d P_M0 = {0, 0, 5};			//initial position of Missile
+Eigen::Vector3d P_M0 = {0, 0, 2};			//initial position of Missile
 Eigen::Vector3d V_T = {-3, 0, 0};			//velocity of Target
 Eigen::Vector3d V_M = {0, 0, 0};
-float VM = 5;						//velocity of Missile
+float VM = 4;						//velocity of Missile
 
 float K1 = 4;						//proportion of guidance
 float K2 = 4;
+float UpdateTime = 0.05;
 
 double sita = 0.0;
 double psi_v = 0.0;
@@ -101,9 +104,9 @@ Eigen::Matrix3d L;
 Eigen::Vector3d P_r;
 Eigen::Vector3d P_T = P_T0;
 Eigen::Vector3d P_M = P_M0;
-double x_r = 1;
-double y_r = 1;
-double z_r = 1;
+double x_r = 0;
+double y_r = 0;
+double z_r = 0;
 double x_r_last = 0;
 double y_r_last = 0;
 double z_r_last = 0;
@@ -129,8 +132,8 @@ void target_cb(const geometry_msgs::PoseStamped::ConstPtr &msg)
 	Eigen::Vector3d pos_target_fcu_enu(msg->pose.position.x, msg->pose.position.y, msg->pose.position.z);
 
 	P_T = pos_target_fcu_enu;
-	P_T[0] = 15;
-	P_T[1] = 15;
+	P_T[0] = 20;
+	P_T[1] = 20;
 	P_T[2] = 15;
 }
 
@@ -139,8 +142,8 @@ void Guidance_Update(void)
 	//update the position
 	P_M = position_get;
 	//cout << "P_M = position_get = " << P_M <<endl; 		//yes, i get the right position
-	P_T[0] = 15;
-	P_T[1] = 15;
+	P_T[0] = 20;
+	P_T[1] = 20;
 	P_T[2] = 15;
 	
 	//update the attitude
@@ -148,18 +151,6 @@ void Guidance_Update(void)
 	gamma_vehicle = attitude_get[1];
 	psi = attitude_get[2];
 
-	L << cos(phi) * cos(psi), -sin(phi) * cos(psi) * cos(gamma_vehicle) + sin(psi) * sin(gamma_vehicle), sin(phi) * cos(psi) * sin(gamma_vehicle) + sin(psi) * cos(gamma_vehicle),
-    sin(phi), cos(phi) * cos(gamma_vehicle), -cos(phi) * sin(gamma_vehicle),
-    -cos(phi) * sin(psi), sin(phi) * sin(psi) * cos(gamma_vehicle) + cos(psi) * sin(gamma_vehicle), -sin(phi) * sin(psi) * sin(gamma_vehicle) + cos(psi) * cos(gamma_vehicle);
-	double L11 = L(0, 0);
-	double L12 = L(0, 1);
-	double L13 = L(0, 2);
-	double L21 = L(1, 0);
-	double L22 = L(1, 1);
-	double L23 = L(1, 2);
-	double L31 = L(2, 0);
-	double L32 = L(2, 1);
-	double L33 = L(2, 2);
 
 	x_r_last = x_r;		//Because the feather of atan function 
 	y_r_last = y_r;
@@ -170,27 +161,48 @@ void Guidance_Update(void)
 	y_r = P_r[1];
 	z_r = P_r[2];
 
-	q_lambda = atan(y_r /x_r);
-   	q_gamma = - atan(z_r/sqrt(x_r * x_r + y_r * y_r));
-    q_lambda_last = atan(y_r_last/x_r_last);
-    q_gamma_last = - atan(z_r_last/sqrt(x_r_last * x_r_last + y_r_last * y_r_last));
+	q_lambda = atan2(y_r , x_r);
+   	q_gamma = atan2(z_r , sqrt(x_r * x_r + y_r * y_r));
+    q_lambda_last = atan2(y_r_last , x_r_last);
+    q_gamma_last = atan2(z_r_last , sqrt(x_r_last * x_r_last + y_r_last * y_r_last));
+
+	// q_lambda = atan(y_r /x_r);
+   	// q_gamma = - atan(z_r/sqrt(x_r * x_r + y_r * y_r));
+    // q_lambda_last = atan(y_r_last/x_r_last);
+    // q_gamma_last = - atan(z_r_last/sqrt(x_r_last * x_r_last + y_r_last * y_r_last));
+	if (q_lambda_last == atan2(0, 0) && q_gamma_last == atan2(0, 0))
+	{
+		q_lambda_last = q_lambda;
+		q_gamma_last = q_gamma;
+		cout << "I CHANGE THE VALUE!!!" << endl;
+	}
     q_lambda_delta = q_lambda - q_lambda_last;
    	q_gamma_delta = q_gamma - q_gamma_last;
+
+	// cout << "q_lambda = " << q_lambda << endl;
+	// cout << "q_lambda_last = " << q_lambda_last << endl;
+	// cout << "q_gamma = " << q_gamma << endl;
+	// cout << "q_gamma_last = " << q_gamma_last << endl;
 	
 	delta_sita = K1 * q_gamma_delta;
     delta_psi_v = K2 * q_lambda_delta;
-	if (delta_sita > 1 || delta_psi_v > 1)
-	{
-		delta_psi_v = 0;
-		delta_sita = 0;
-	}
+	// if (delta_sita > 1 || delta_psi_v > 1)
+	// {
+	// 	delta_psi_v = 0;
+	// 	delta_sita = 0;
+	// }
 	//cout << "I come in, and now psi_v = " << psi_v  << " sita = " << sita << endl;	
 	sita = sita + delta_sita;
    	psi_v = psi_v + delta_psi_v;
+	if (psi_v > 2 * M_PI)
+	{
+		psi_v = psi_v - 2 * M_PI;
+	}
 	//cout << "I come out, and now psi_v = " << psi_v  << " sita = " << sita << endl;
 	
-	//cout << "psi_v = " << psi_v << endl;
-	V_M << VM * cos(sita) * cos(psi_v), VM * cos(sita) * sin(psi_v), VM * sin(- sita);
+	// cout << "psi_v = " << psi_v << endl;
+	// cout << "sita = " << sita << endl;
+	V_M << VM * cos(sita) * cos(psi_v), VM * cos(sita) * sin(psi_v), VM * sin(sita);
 
 }
 
@@ -269,6 +281,7 @@ void send_pos_setpoint(const Eigen::Vector3d& pos_sp, float yaw_sp)
 
 void FlyState_update(void)
 {
+	
 	switch(FlyState)
 	{
 		case WATTING:
@@ -391,9 +404,9 @@ int main(int argc, char **argv)
 		cout<< "\t" << P_T[1] << "\t" << P_M[1] << endl;
 		cout<< "\t" << P_T[2] << "\t" << P_M[2] << endl;
 
-		//cout << "sita = " << sita << endl;
-		//cout << "psi_v = " << psi_v << endl;
-		//cout << "V_M = " << endl << V_M << endl;
+		// cout << "sita = " << sita << endl;
+		// cout << "psi_v = " << psi_v << endl;
+		// cout << "V_M = " << endl << V_M << endl;
 
 	}
 	return 0;

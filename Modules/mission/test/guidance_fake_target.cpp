@@ -47,8 +47,8 @@ using namespace std;
 float desire_x = 0.0;				//desired altitude
 float desire_y = 0.0;				//desired altitude
 float desire_z = 5.0;				//desired altitude
-float desire_target_x = 15.0;				//desired altitude
-float desire_target_y = 15.0;				//desired altitude
+float desire_target_x = 20.0;				//desired altitude
+float desire_target_y = 20.0;				//desired altitude
 float desire_target_z = 15.0;				//desired altitude
 
 float desire_Radius = 10.0;		//desired radius of circle
@@ -132,9 +132,9 @@ void target_cb(const geometry_msgs::PoseStamped::ConstPtr &msg)
 	Eigen::Vector3d pos_target_fcu_enu(msg->pose.position.x, msg->pose.position.y, msg->pose.position.z);
 
 	P_T = pos_target_fcu_enu;
-	P_T[0] = 50;
-	P_T[1] = -50;
-	P_T[2] = 50;
+	P_T[0] = 20;
+	P_T[1] = 20;
+	P_T[2] = 15;
 }
 
 void Guidance_Update(void)
@@ -142,9 +142,9 @@ void Guidance_Update(void)
 	//update the position
 	P_M = position_get;
 	//cout << "P_M = position_get = " << P_M <<endl; 		//yes, i get the right position
-	P_T[0] = 15;
-	P_T[1] = -15;
-	P_T[2] = 2;
+	P_T[0] = 20;
+	P_T[1] = 20;
+	P_T[2] = 15;
 	
 	//update the attitude
 	phi = attitude_get[0];
